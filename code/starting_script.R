@@ -9,14 +9,15 @@ source('/Users/yinghuizhou/Downloads/bernoulli_bandit_utils.r')
 source('/Users/yinghuizhou/Downloads/adaptive_utils_try.R')
 
 # Read in data
+set.seed(60615)
 results <- run_bernoulli_experiment(
   means=c(0.5,0.2,0.3), 
   algorithm="thompson_sampling", 
   floor = 0.001,
   T = 300)
 
-ipw_scores <- ipw_statistics(results)
-haj_scores <- haj_statistics(results)
+ipw_scores <- ipw_scores(results)
+haj_scores <- haj_scores(results)
 
 # saved hypothetical contextual probabilities 
 # contextual probabilities: A * A * K matrix for time, contexts, treatment arms
