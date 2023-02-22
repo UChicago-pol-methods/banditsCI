@@ -1,6 +1,6 @@
 library(methods)
 # To use setRefClass(); See http://adv-r.had.co.nz/R5.html. setRefClass() creates "reference classes". In short, reference classes allow you to create objects that behave more like objects in object-oriented programming languages (e.g. Python, Java)
-library(cv.glmnet)
+library(glmnet)
 # Machine learning package, replacing sklearn.linear_model in python
 
 
