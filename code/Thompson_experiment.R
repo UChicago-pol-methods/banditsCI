@@ -12,8 +12,8 @@ run_experiment <- function(xs, ys, config, batch_sizes) {
   # - batch_sizes: nparray of batch sizes ?????
   # OUTPUT:
   # - pulled arms, observed rewards, assignment probabilities
-  T <- dim(ys)[1] # T: the number of observations ?
-  K <- dim(ys)[2] # K: the number of arms?
+  T <- dim(ys)[1] # T: the number of observations #TODO
+  K <- dim(ys)[2] # K: the number of arms
   p <- dim(xs)[2]
   ws <- numeric(T) # the index of the selected arm? length = T. The ws array is a 1-dimensional array that will store the action
   yobs <- numeric(T)
