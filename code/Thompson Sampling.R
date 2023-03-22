@@ -36,7 +36,17 @@ update_thompson <- function(xs, ws, ys, model) {
   # xs: covariate X_t of shape [A, p]
   # ys: potential outcomes of shape [A, K]
   for (w in 1:model$K) {
-    model <- update_thompson_1(xs[ws == w], ys[ws == w], w, model) ### DISCUSS: might be something wrong with xs.
+    # input: 
+    model$X[[w]] <- rbind(model$X[[w]], xs[ws == w,])
+    model$y[[w]] <- rbind(model$y[[w]], matrix(yobs[ws == w], ncol = 1))
+    regr <- cv.glmnet(model$X[[w]], model$y[[w]])             ### ERROR 
+    # We'll use this type of lamba value for prediction
+    coef <- coef(regr, s = 'lambda.1se') # coefficients
+    yhat <- predict(regr, s = 'lambda.1se', newx = xs[ws == w,]) # prediction
+    model$mu[w, ] <- coef(regr)[,1]
+    X <- cbind(1,model$X[[w]])
+    B <- t(X) %*% X + regr$lambda.min * diag(model$p + 1)
+    model$V[w, , ] <- mean((model$y[[w]] - yhat)^2) * solve(B)
   }
   return(model)
 }
