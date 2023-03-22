@@ -23,8 +23,8 @@ run_experiment <- function(xs, ys, floor_start, floor_decay, batch_sizes) {
   
   # uniform sampling at the first batch
   batch_size_cumsum <- cumsum(batch_sizes) # 
-  ws[1:batch_size_cumsum[1]] <- sample(1:batch_size_cumsum[1] %% K)  
-  yobs[1:batch_size_cumsum[1]] <- ys[1:batch_size_cumsum[1], ws[1:batch_size_cumsum[1]]]
+  ws[1:batch_size_cumsum[1]] <- sample(1:batch_size_cumsum[1] %% K)+1  
+  yobs[1:batch_size_cumsum[1]] <- ys[cbind(1:batch_size_cumsum[1], ws[1:batch_size_cumsum[1]])]
   probs[1:batch_size_cumsum[1], , ] <- array(1/K, dim = c(batch_size_cumsum[1], A, K))
   Probs_t[1:batch_size_cumsum[1], ] <- matrix(1/K, batch_size_cumsum[1], K)
 
