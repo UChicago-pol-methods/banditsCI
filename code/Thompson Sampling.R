@@ -15,21 +15,6 @@ LinTSModel <- function(K, p, floor_start, floor_decay, num_mc=100) {
   return(model)
 }
 
-update_thompson_1 = function(x, y, w, model) {
-  # input: 
-  model$X[[w]] <- rbind(model$X[[w]], x)
-  model$y[[w]] <- rbind(model$y[[w]], y)
-  regr <- cv.glmnet(model$X[[w]], model$y[[w]])             ### ERROR 
-  # We'll use this type of lamba value for prediction
-  coef <- coef(regr, s = 'lambda.1se') # coefficients
-  yhat <- predict(regr, s = 'lambda.1se', newx = x) # prediction
-  model$mu[w, ] <- c(regr$intercept_, regr$coef)
-  # intercept_  is outputs of RidgeCV in python, change name if outputs of glmnet vary
-  X <- rbind(matrix(1,lenth(model$X[w]),1),model$X[w])
-  B <- t(X) %*% X + regr$alpha_ * diag(model$p + 1)
-  model$V[w, , ] <- mean((model$y[[w]] - yhat)^2) * solve(B)
-  return(model)
-}
 
 update_thompson <- function(xs, ws, ys, model) {
   # Updates LinTS agent with newly observed data.
