@@ -16,7 +16,7 @@ LinTSModel <- function(K, p, floor_start, floor_decay, num_mc=100) {
 }
 
 
-update_thompson <- function(xs, ws, ys, model) {
+update_thompson <- function(xs, ws, yobs, model) {
   # Updates LinTS agent with newly observed data.
   # xs: covariate X_t of shape [A, p]
   # ys: potential outcomes of shape [A, K]
