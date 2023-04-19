@@ -10,26 +10,25 @@ LinTSModel <- function(K, p, floor_start, floor_decay, num_mc=100) {
   model$p <- p
   model$floor_start <- floor_start
   model$floor_decay <- floor_decay
-  model$mu <- matrix(0, nrow=p+1, ncol=K)
+  model$mu <- matrix(0, nrow=K, ncol=p+1)
   model$V <- array(0, dim=c(K, p+1, p+1))
-  model$X <- matrix(0, nrow=0, ncol=p+1)
-  model$y <- matrix(0, nrow=0, ncol=K)
+  model$X <- replicate(K, matrix(0, nrow=0, ncol=p))
+  model$y <- replicate(K, matrix(0, nrow=0, ncol=1))
   return(model)
 }
 
 
 update_thompson <- function(xs, ws, yobs, model) {
   for (w in 1:model$K) {
-    model$X <- rbind(model$X, cbind(1, xs[ws == w,]))
-    model$y <- rbind(model$y, cbind(yobs[ws == w, drop = FALSE], matrix(0, nrow = sum(ws == w), ncol = model$K-1))) # add a column of zeros to yobs to match the number of columns in model$y
-    regr <- cv.glmnet(model$X, model$y) 
+    model$X[[w]] <- rbind(model$X[[w]], cbind(xs[ws == w,]))
+    model$y[[w]] <- rbind(model$y[[w]], cbind(yobs[ws == w, drop = FALSE]))
+    regr <- cv.glmnet(model$X[[w]], model$y[[w]]) 
     coef <- coef(regr, s = 'lambda.1se')
-    yhat <- predict(regr, s = 'lambda.1se', newx = xs[ws == w,])
-    model$mu[w,] <- coef[[1]] # intercept
-    model$mu[w,-1] <- coef[[-1]] # coefficients of predictors
-    X <- cbind(1, model$X)
-    B <- t(X) %*% X + regr$lambda.min * diag(model$p + 1)
-    model$V[w,,] <- array(mean((model$y - yhat)^2) * solve(B), dim = c(p+1, K, K))
+    yhat <- predict(regr, s = 'lambda.1se', model$X[[w]])
+    model$mu[w,] <- coef[, drop = TRUE] # intercept and coefficients of predictors
+    X <- cbind(1, model$X[[w]])
+    B <- t(X) %*% X + regr$lambda.1se * diag(model$p + 1)
+    model$V[w,,] <- array(mean((model$y[[w]] - yhat)^2) * solve(B))
   }
   return(model)
 }
@@ -41,16 +40,16 @@ draw_thompson <- function(xs, model, start, end, current_t) {
   p <- dim(xs)[2]
   xt <- cbind(rep(1, A), xs)
   floor <- model$floor_start / (model$floor_decay * current_t)
-  coeff <- array(NA, dim=c(p+1, model$num_mc, K))
+  coeff <- array(NA, dim=c(K, model$num_mc, p+1))
   for (w in 1:model$K) {
     coeff[w,,] <- mvrnorm(model$num_mc, model$mu[w,], model$V[w,,]) # random.multivariate_normal from different contexts
   }
   
-  draws <- apply(coeff, 2, function(x) {t(xt) %*% x})
+  draws <- apply(coeff, c(1,2), function(x) {xt %*% x}) # TODO double check this line
   
   ps <- array(NA, dim=c(A, K))
-  for (s in 1:A) {
-    ps[s, ] <- table(factor(apply(draws[, , s], 2, which.max), levels = 1:model$K) ) / model$num_mc
+  for (s in 1:A) { # TODO and double check that draws is doing the right thing here
+    ps[s, ] <- table(factor(apply(draws[s, , ], 2, which.max), levels = 1:model$K) ) / model$num_mc
     ps[s, ] <- impose_floor(ps[s, ], floor)
   }
   w <- sapply(1:(end - start + 1), function(t) sample(1:model$K, size=1, prob=ps[start + t - 1, ]))
@@ -94,7 +93,7 @@ run_experiment <- function(xs, ys, floor_start, floor_decay, batch_sizes) {
     draw <- draw_thompson(xs, bandit_model, start=f, end=l, current_t = f)
     w <- draw$w
     p <- draw$p
-    yobs[f:l, w] <- ys[f:l, w]
+    yobs[f:l] <- ys[cbind(f:l, w)]
     ws[f:l] <- w
     probs[f:l, , ] <- array(p, dim = c(l - f + 1, A, K))
     Probs_t[f:l, ] <- p[f:l, ]
