@@ -1,7 +1,6 @@
 # Functions
 
 source('Thompson Sampling.R')
-source('bernoulli_bandit_utils.R')
        
 # Set parameters
 floor_start <- 5
