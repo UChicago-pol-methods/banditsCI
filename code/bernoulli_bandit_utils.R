@@ -34,12 +34,12 @@ bernoulli_thompson_sampling_probabilities_b <- function(scores,
                                                         num_mc = 100, 
                                                         floor = 0.01) {
   K <- ncol(scores)
-  t <- nrow(scores)
+  A <- nrow(scores)
   # 0) predict outcome means and variances for each arm
   muhats <- colMeans(scores)
   
-  if(t<=3){
-    sigmahats <- c(.5,.5)/sqrt(t)
+  if(A<=3){
+    sigmahats <- c(.5,.5)/sqrt(A)
   } else {
     sigmahats <- apply(scores, 2, function(x) standard_error(x))
   }
@@ -54,6 +54,38 @@ bernoulli_thompson_sampling_probabilities_b <- function(scores,
   return(impose_floor(ts_probs, floor))
 }
 
+# Linear Thompson Sampling probabilities
+linear_thompson_sampling_probabilities <- function(data, 
+                                                   num_trials,
+                                                   floor = 0.01) {
+  # This function takes two arguments: data, which is a matrix of data with columns for each action and a column for the reward; and num_trials, which is the number of trials to run.
+  # Initialize the parameters of the model to 0
+  beta <- rep(0, dim(data)[2])
+  # Initialize a matrix to store the probability of each action being chosen at each trial
+  lin_ts_probs <- matrix(0, nrow=num_trials, ncol=dim(data)[1])
+  # Loop over the number of trials
+  for (i in 1:num_trials) {
+    # Sample a set of parameters from the posterior distribution
+    theta <- rnorm(dim(data)[2], mean=beta, sd=1)
+    # Calculate the expected reward for each action
+    rewards <- data %*% theta
+    # Calculate the probability of each action being chosen
+    lin_ts_probs[i,] <- rewards / sum(rewards)
+    # Choose an action according to the calculated probabilities
+    action <- sample(1:dim(data)[1], size=1, lin_ts_probs=lin_ts_probs[i,])
+    # Observe the reward for the chosen action
+    reward <- data[action, "reward"]
+    # Update the parameters of the model
+    beta <- beta + (reward - mean(data[,"reward"])) * data[action,]
+    # Update the data matrix to include the new reward information
+    data[action, "reward"] <- (1 - 1/i) * data[action, "reward"] + (1/i) * reward
+  }
+  
+  # Return the probabilities of each action being chosen
+  return(lin_ts_probs, floor)
+}
+
+
 
 # Epsilon-greedy probabilities
 bernoulli_epsilon_greedy_probabilities <- function(successes, failures, 
@@ -65,9 +97,9 @@ bernoulli_epsilon_greedy_probabilities <- function(successes, failures,
     return(rep(1 / K, K))
   } else {
     # Current period
-    t <- sum(trials)
+    A <- sum(trials)
     # Current epsilon: 1/K * 1/t^{decay rate}
-    epsilon <- 1 / K * 1 / t^epsilon_rate
+    epsilon <- 1 / K * 1 / A^epsilon_rate
     # Choose best arm with 1 - epsilon probability
     greedy_arm <- which.max(successes / trials)
     eg_probs <- rep(epsilon / K, K)
@@ -80,14 +112,14 @@ bernoulli_epsilon_greedy_probabilities_b <- function(scores,
                                                      epsilon_rate = 0.5,
                                                      floor = 0.01) {
   K <- ncol(scores)
-  t <- nrow(scores)
-  if (t<K) {
+  A <- nrow(scores)
+  if (A<K) {
     return(rep(1 / K, K))
   } else {
     # 0) predict outcome means and variances for each arm
     muhats <- colMeans(scores)
     # Current epsilon: 1/K * 1/t^{decay rate}
-    epsilon <- 1 / K * 1 / t^epsilon_rate
+    epsilon <- 1 / K * 1 / A^epsilon_rate
     # Choose best arm with 1 - epsilon probability
     greedy_arm <- which.max(muhats)
     eg_probs <- rep(epsilon / K, K)
@@ -113,7 +145,7 @@ bernoulli_ucb_probabilities <- function(successes,
 run_bernoulli_experiment <- function(
     means, 
     algorithm, 
-    T, 
+    A, 
     initial_batch = 0,
     floor = 0,
     num_batches = 100) {
@@ -122,45 +154,45 @@ run_bernoulli_experiment <- function(
   K <- length(means)
   
   # Draw potential outcomes
-  ys <- t(replicate(T, rbinom(n = K, size = 1, prob = means)))
+  ys <- a(replicate(A, rbinom(n = K, size = 1, prob = means)))
   
   # Initialize statistics
   successes <- rep(0, K)
   failures <- rep(0, K)
   
   # Initialize output
-  e <- matrix(NA, T, K)
-  w <- rep(NA, T)
-  yobs <- rep(NA, T)
-  regret <- rep(NA, T)
+  e <- matrix(NA, A, K)
+  w <- rep(NA, A)
+  yobs <- rep(NA, A)
+  regret <- rep(NA, A)
   
-  if(num_batches> (T-initial_batch)){
-    num_batches <- (T-initial_batch)
+  if(num_batches> (A-initial_batch)){
+    num_batches <- (A-initial_batch)
   }
   
-  adpt_idx <- (initial_batch + 1):T
+  adpt_idx <- (initial_batch + 1):A
   update_times <- ceiling(as.numeric(sub("\\((.+),.*", "\\1", 
                                          unique(cut(adpt_idx, num_batches)))))
   
   # Run experiment
-  for (t in seq(T)) {
+  for (i in seq(A)) {
     
-    if (t <= max(initial_batch, 1) ) {
+    if (i <= max(initial_batch, 1) ) {
       # During initial phase,
       # choose arms at random
-      e[t,] <- rep(1 / K, K)
+      e[i,] <- rep(1 / K, K)
     } else {
-      et <- e[1:(t-1),,drop=FALSE]
-      wt <- w[1:(t-1)]
-      yobst <- yobs[1:(t-1)]
-      ipw_scores <- sapply(seq(K), function(k) yobst*(wt==k)/(et[, k]))
+      ei <- e[1:(i-1),,drop=FALSE]
+      wi <- w[1:(i-1)]
+      yobsi <- yobs[1:(i-1)]
+      ipw_scores <- sapply(seq(K), function(k) yobst*(wt==k)/(ei[, k]))
       if(is.null(dim(ipw_scores))){
-        dim(ipw_scores) <- c(t-1, K) 
+        dim(ipw_scores) <- c(i-1, K) 
       } 
       # During adaptive phase, compute assignment
       # probabilities according to algorithm
-      if(t %in% update_times){
-        e[t, ] <- switch(algorithm,
+      if(i %in% update_times){
+        e[i, ] <- switch(algorithm,
                          "thompson_sampling" = bernoulli_thompson_sampling_probabilities(successes, failures, floor = floor),
                          "epsilon_greedy" = bernoulli_epsilon_greedy_probabilities(successes, failures, floor = floor),
                          "ucb" = bernoulli_ucb_probabilities(successes, failures),
@@ -175,37 +207,37 @@ run_bernoulli_experiment <- function(
                              floor = floor)
         ) 
       } else {
-        e[t, ] <- e[(t-1), ]
+        e[i, ] <- e[(i-1), ]
       }
     }
     
     # Draw from the thompson sampling probabilities
-    w[t] <- sample.int(K, size = 1, prob = e[t, ])
+    w[i] <- sample.int(K, size = 1, prob = e[i, ])
     
     # Observe reward given arm
-    yobs[t] <- ys[t, w[t]]
+    yobs[i] <- ys[i, w[i]]
     
     # Update model statistics
-    if (yobs[t] == 1) {
-      successes[w[t]] <- successes[w[t]] + 1
+    if (yobs[i] == 1) {
+      successes[w[i]] <- successes[w[i]] + 1
     } else {
-      failures[w[t]] <- failures[w[t]] + 1
+      failures[w[i]] <- failures[w[i]] + 1
     }
     
     # Compute average regret (note this is not possible in real life)
-    regret[t] <- max(means) - mean(means[w[1:t]])
+    regret[i] <- max(means) - mean(means[w[1:i]])
   }
   
   # Return experiment results
   list(yobs = yobs, w = w, e = e, regret = regret, 
-       means = means, T = T, algorithm = algorithm,
+       means = means, A = A, algorithm = algorithm,
        floor = floor)
 }
 
 run_bernoulli_control_experiment <- function(
     means, 
     algorithm, 
-    T, 
+    A, 
     initial_batch = 0,
     floor = 0,
     num_batches = 100,
@@ -216,45 +248,45 @@ run_bernoulli_control_experiment <- function(
   if(is.null(control)){ control <- 1/K }
   
   # Draw potential outcomes
-  ys <- t(replicate(T, rbinom(n = K, size = 1, prob = means)))
+  ys <- i(replicate(A, rbinom(n = K, size = 1, prob = means)))
   
   # Initialize statistics
   successes <- rep(0, K)
   failures <- rep(0, K)
   
   # Initialize output
-  e <- matrix(NA, T, K)
-  w <- rep(NA, T)
-  yobs <- rep(NA, T)
-  regret <- rep(NA, T)
+  e <- matrix(NA, A, K)
+  w <- rep(NA, A)
+  yobs <- rep(NA, A)
+  regret <- rep(NA, A)
   
-  if(num_batches> (T-initial_batch)){
-    num_batches <- (T-initial_batch)
+  if(num_batches> (A-initial_batch)){
+    num_batches <- (A-initial_batch)
   }
   
-  adpt_idx <- (initial_batch + 1):T
+  adpt_idx <- (initial_batch + 1):A
   update_times <- ceiling(as.numeric(sub("\\((.+),.*", "\\1", 
                                          unique(cut(adpt_idx, num_batches)))))
   
   # Run experiment
-  for (t in seq(T)) {
+  for (i in seq(A)) {
     
-    if (t <= max(initial_batch, 1) ) {
+    if (i <= max(initial_batch, 1) ) {
       # During initial phase,
       # choose arms at random
-      e[t,] <- rep(1 / K, K)
+      e[i,] <- rep(1 / K, K)
     } else {
-      et <- e[1:(t-1),,drop=FALSE]
-      wt <- w[1:(t-1)]
-      yobst <- yobs[1:(t-1)]
-      ipw_scores <- sapply(seq(K), function(k) yobst*(wt==k)/(et[, k]))
+      et <- e[1:(i-1),,drop=FALSE]
+      wt <- w[1:(i-1)]
+      yobst <- yobs[1:(i-1)]
+      ipw_scores <- sapply(seq(K), function(k) yobst*(wt==k)/(ei[, k]))
       if(is.null(dim(ipw_scores))){
-        dim(ipw_scores) <- c(t-1, K) 
+        dim(ipw_scores) <- c(i-1, K) 
       } 
       # During adaptive phase, compute assignment
       # probabilities according to algorithm
-      if(t %in% update_times){
-        e[t, ] <- switch(algorithm,
+      if(i %in% update_times){
+        e[i, ] <- switch(algorithm,
                          "thompson_sampling" = c(control, (1-control)*bernoulli_thompson_sampling_probabilities(successes[-1], failures[-1], floor = floor)),
                          "epsilon_greedy" = c(control, (1-control)*bernoulli_epsilon_greedy_probabilities(successes[-1], failures[-1])),
                          "thompson_sampling_balanced" = 
@@ -269,30 +301,30 @@ run_bernoulli_control_experiment <- function(
                          "random" = rep(1 / K, K)
         ) 
       } else {
-        e[t, ] <- e[(t-1), ]
+        e[i, ] <- e[(i-1), ]
       }
     }
     
     # Draw from the thompson sampling probabilities
-    w[t] <- sample.int(K, size = 1, prob = e[t, ])
+    w[i] <- sample.int(K, size = 1, prob = e[i, ])
     
     # Observe reward given arm
-    yobs[t] <- ys[t, w[t]]
+    yobs[i] <- ys[i, w[i]]
     
     # Update model statistics
-    if (yobs[t] == 1) {
-      successes[w[t]] <- successes[w[t]] + 1
+    if (yobs[i] == 1) {
+      successes[w[i]] <- successes[w[i]] + 1
     } else {
-      failures[w[t]] <- failures[w[t]] + 1
+      failures[w[i]] <- failures[w[i]] + 1
     }
     
     # Compute regret (note this is not possible in real life)
-    regret[t] <- max(means) - mean(means[w[1:t]])
+    regret[i] <- max(means) - mean(means[w[1:i]])
   }
   
   # Return experiment results
   list(yobs = yobs, w = w, e = e, regret = regret, 
-       means = means, T = T, algorithm = algorithm,
+       means = means, A = A, algorithm = algorithm,
        floor = floor)
 }
 
@@ -338,6 +370,11 @@ ipw_statistics <- function(result) {
   ),
   id.vars = c("arm", "method"))
   stats
+}
+
+ipw_scores <- function(result) {
+  K <- ncol(result$e)
+  ipw <- sapply(seq(K), function(k) result$yobs * (result$w == k) / result$e[, k])
   list(ipw_scores=ipw)
 }
 
@@ -360,9 +397,13 @@ haj_statistics <- function(result) {
   ),
   id.vars = c("arm", "method"))
   stats
-  list(haj_scores=haj)
 }
 
+haj_scores <- function(result) {
+  K <- ncol(result$e)
+  haj <- sapply(seq(K), function(k) result$yobs * (result$w == k) / result$e[, k] / sum(1/result$T *(result$w == k) / result$e[, k]))
+  list(haj_scores=haj)
+}
 
 # difference statistics ----
 # arm 1 - other arms
@@ -536,7 +577,7 @@ plot_regret <- function(results) {
 
 plot_assignment_probabilities <- function(results, color = FALSE) {
   K <- ncol(results[[1]]$e)
-  T <- nrow(results[[1]]$e)
+  A <- nrow(results[[1]]$e)
   df <- do.call(rbind, 
                 mapply(function(r, i) {
                   data.frame(factor(i), 1:nrow(r$e), r$e) 
