@@ -1,4 +1,31 @@
-# Bandit Contextual Inference Functions ####
+# Bandit Contextual Inference Functions 
+
+aw_scores <- function(yobs, ws, balwts, K, muhat=NULL) {  ## TODO: Find out what is muhat
+  # Compute AIPW/doubly robust scores. Return IPW scores if muhat is NULL.
+  # INPUT
+  #     - yobs: observed rewards, shape [A]
+  #     - ws: pulled arms, shape [A]
+  #     - balwts: inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
+  #     - K: number of arms
+  #     - muhat: plug-in estimator of arm outcomes, shape [A, K]
+  # OUTPUT
+  #     - scores: AIPW scores, shape [A, K]
+  
+  expand <- function(mat, indices, ncol) {
+    output <- matrix(0, nrow(mat), ncol)
+    for (i in 1:nrow(mat)) {
+      output[i, indices[i]] <- mat[i, indices[i]]
+    }
+    return(output)
+  }
+  scores <- expand(balwts * yobs, ws, K){ 
+    # Y[t]*W[t]/e[t] term
+    if (!is.null(muhat)){
+      scores <- scores + (1 - expand(balwts, ws, K)) * muhat
+    }
+  return(scores)
+  }
+}
 
 aw_estimate <- function(scores, policy, evalwts=NULL){  
   # Estimate policy value via non-contextual adaptive weighting.
@@ -15,7 +42,6 @@ aw_estimate <- function(scores, policy, evalwts=NULL){
   
   return(sum(evalwts*rowSums(scores * policy))/sum(evalwts)) 
 }
-
 
 aw_var <- function(scores, estimate, policy, evalwts=NULL){
   # Variance of policy value estimator via non-contextual adaptive weighting.
@@ -38,7 +64,6 @@ aw_var <- function(scores, estimate, policy, evalwts=NULL){
   
   return(sum((rowSums(policy * scores)-estimate)^2*evalwts^2)/sum(evalwts)^2) 
 }
-
 
 estimate <- function(w, gammahat, policy){
   # Return estimate and variance of policy evaluation via non-contextual weighting.
