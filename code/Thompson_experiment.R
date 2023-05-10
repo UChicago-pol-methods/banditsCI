@@ -29,3 +29,13 @@ balwts <- balwts(results$ws, results$probs)
 
 # Save results and balwts
 save(results, balwts, mus, file="experiment_data.RData")
+
+# produce conditional means estimates for each covariate profile
+## extract the coefficient estimates from results$fitted_bandit_model$mu
+mu <- results$fitted_bandit_model$mu
+## for every matrix in the list results$fitted_bandit_model$X, add an column of 1s
+X_1 <- lapply(results$fitted_bandit_model$X, cbind, 1)
+
+## multiply X_1 by the coefficient estimates   ## TODO: figure out how to multiply the matrices in the list by the vector
+mu_hat <- lapply(X_1, function(x) x %*% mu) ## shouldn't use lapply
+
