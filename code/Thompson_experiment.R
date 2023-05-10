@@ -27,9 +27,6 @@ results <- run_experiment(xs, ys, floor_start, floor_decay, batch_sizes)
 # balwts: inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
 balwts <- balwts(results$ws, results$probs)
 
-# Save results and balwts
-save(results, balwts, mus, file="experiment_data.RData")
-
 # produce conditional means estimates for each covariate profile
 ## extract the coefficient estimates from results$fitted_bandit_model$mu and transpose
 mu_transpose <- t(results$fitted_bandit_model$mu)
@@ -39,3 +36,6 @@ X_1 <- lapply(results$fitted_bandit_model$X, cbind, 1)
 
 ## multiply X_1 by the coefficient estimates
 mu_hat <- lapply(X_1, function(x) x %*% mu_transpose) 
+
+# Save results, mu_hat and balwts
+save(results, balwts, mu_hat, file="experiment_data.RData")
