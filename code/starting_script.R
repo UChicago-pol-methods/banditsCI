@@ -15,14 +15,13 @@ load('experiment_data.RData')
 # contextual probabilities: A * A * K matrix for time, contexts, treatment arms
 contextual_probs <- results$probs
 
-# AIPW scores
-## We have a couple of different implementations of these, we will focus on the 
-## `R_learn` version. 
-# aipw_scores_learn <- data$e
-
-aipw_scoresR_learn <- ipw_scores$ipw_scores
-# aipw_scoresR_learn <- haj_scores$haj_scores
-
+# calculate AIPW scores with aw_scores function
+aipw_scoresR_learn <- aw_scores(
+  ws = results$ws, 
+  yobs = results$yobs, 
+  mu_hat = mu_hat, 
+  K = K,
+  balwts = balwts)
 
 ## Hyperparameters
 # Number of treatment arms: W is the variable representing the treatment arms. K is the number of treatment arms. A is the number of observations.

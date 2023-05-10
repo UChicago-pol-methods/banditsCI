@@ -1,13 +1,13 @@
 # Bandit Contextual Inference Functions 
 
-aw_scores <- function(yobs, ws, balwts, K, muhat=NULL) {  ## TODO: Find out what is muhat (or how to calculate aw_score))
+aw_scores <- function(yobs, ws, balwts, K, mu_hat=NULL) {  ## TODO: Fix the function here
   # Compute AIPW/doubly robust scores. Return IPW scores if muhat is NULL.
   # INPUT
   #     - yobs: observed rewards, shape [A]
   #     - ws: pulled arms, shape [A]
   #     - balwts: inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
   #     - K: number of arms
-  #     - muhat: plug-in estimator of arm outcomes, shape [A, K]
+  #     - mu_hat: plug-in estimator of arm outcomes, shape [A, K]
   # OUTPUT
   #     - scores: AIPW scores, shape [A, K]
   
@@ -18,13 +18,12 @@ aw_scores <- function(yobs, ws, balwts, K, muhat=NULL) {  ## TODO: Find out what
     }
     return(output)
   }
-  scores <- expand(balwts * yobs, ws, K){ 
+  scores <- expand(balwts * yobs, ws, K) 
     # Y[t]*W[t]/e[t] term
-    if (!is.null(muhat)){
-      scores <- scores + (1 - expand(balwts, ws, K)) * muhat
+    if (!is.null(mu_hat)){
+      scores <- scores + (1 - expand(balwts, ws, K)) * mu_hat
     }
   return(scores)
-  }
 }
 
 aw_estimate <- function(scores, policy, evalwts=NULL){  
