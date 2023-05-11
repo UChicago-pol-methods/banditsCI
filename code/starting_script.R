@@ -5,23 +5,15 @@ cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2",
                "#D55E00", "#CC79A7")
 
 ## Functions
-source('/Users/yinghuizhou/Downloads/bernoulli_bandit_utils.r')
-source('/Users/yinghuizhou/Downloads/adaptive_utils_try.R')
+source('bernoulli_bandit_utils.r')
+source('adaptive_utils.R')
 
 # Read in data
-set.seed(60615)
-results <- run_bernoulli_experiment(
-  means=c(0.5,0.2,0.3), 
-  algorithm="thompson_sampling", 
-  floor = 0.001,
-  T = 300)
-
-ipw_scores <- ipw_scores(results)
-haj_scores <- haj_scores(results)
+load('experiment_data.RData')
 
 # saved hypothetical contextual probabilities 
 # contextual probabilities: A * A * K matrix for time, contexts, treatment arms
-contextual_probs <- results$e
+contextual_probs <- results$probs
 
 # AIPW scores
 ## We have a couple of different implementations of these, we will focus on the 

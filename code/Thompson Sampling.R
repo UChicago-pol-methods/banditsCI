@@ -1,7 +1,6 @@
 library(glmnet)
 library(Matrix)
 library(MASS)
-# Machine learning package, replacing sklearn.linear_model in python
 
 LinTSModel <- function(K, p, floor_start, floor_decay, num_mc=100) {
   model <- list()
@@ -17,7 +16,6 @@ LinTSModel <- function(K, p, floor_start, floor_decay, num_mc=100) {
   return(model)
 }
 
-
 update_thompson <- function(xs, ws, yobs, model) {
   for (w in 1:model$K) {
     model$X[[w]] <- rbind(model$X[[w]], cbind(xs[ws == w,]))
@@ -32,7 +30,6 @@ update_thompson <- function(xs, ws, yobs, model) {
   }
   return(model)
 }
-
 
 draw_thompson <- function(xs, model, start, end, current_t) {
   # Draws arms with a LinTS agent for the observed covariates.
@@ -139,4 +136,15 @@ generate_bandit_data <- function(n, p, K, noise_std=1.0, signal_strength=1.0) {
   mus <- table(y)/A
   data <- list(xs=xs, ys=ys, muxs=muxs, A=A, p=ncol(xs), K=K)
   return(list(data, mus))
+}
+
+# balwts: inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
+balwts <- function(ws, probs) {
+  A <- length(ws)
+  K <- dim(probs)[3]
+  balwts <- array(0, dim=c(A, K))
+  for (a in 1:A) {
+    balwts[a, ] <- 1/probs[a, a, ]
+  }
+  return(balwts)
 }
