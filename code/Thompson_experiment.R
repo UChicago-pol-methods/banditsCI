@@ -28,14 +28,9 @@ results <- run_experiment(xs, ys, floor_start, floor_decay, batch_sizes)
 balwts <- balwts(results$ws, results$probs)
 
 # produce conditional means estimates for each covariate profile
-## extract the coefficient estimates from results$fitted_bandit_model$mu and transpose
 mu_transpose <- t(results$fitted_bandit_model$mu)
-
-## for every matrix in the list results$fitted_bandit_model$X, add an column of 1s
-X_1 <- lapply(results$fitted_bandit_model$X, cbind, 1)
-
-## multiply X_1 by the coefficient estimates
-mu_hat <- lapply(X_1, function(x) x %*% mu_transpose) 
+xs_1 <- cbind(1, results$xs)
+mu_hat <- xs_1 %*% mu_transpose
 
 # Save results, mu_hat and balwts
 save(results, balwts, mu_hat, file="experiment_data.RData")
