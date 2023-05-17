@@ -1,7 +1,6 @@
 # Run Thompson Experiment
 
 source('Thompson Sampling.R')
-source('bernoulli_bandit_utils.R')
        
 # Set parameters
 floor_start <- 5
@@ -22,15 +21,13 @@ K <- data[[1]]$K
 mus <- data[[2]]
 
 # Run experiment
-results <- run_experiment(xs, ys, floor_start, floor_decay, batch_sizes, is_contextual)
+## Non Contextual: is_contextual = FALSE
+results <- run_experiment(xs, ys, floor_start, floor_decay, batch_sizes, is_contextual = TRUE)
+
+mu_hat <- calculate_mu_hat(results)
 
 # balwts: inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
 balwts <- balwts(results$ws, results$probs)
-
-# produce conditional means estimates for each covariate profile
-mu_transpose <- t(results$fitted_bandit_model$mu)
-xs_1 <- cbind(1, results$xs)
-mu_hat <- xs_1 %*% mu_transpose
 
 # Save results, mu_hat and balwts
 save(results, balwts, mu_hat, file="experiment_data.RData")

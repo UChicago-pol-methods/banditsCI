@@ -2,7 +2,7 @@ library(glmnet)
 library(Matrix)
 library(MASS)
 
-LinTSModel <- function(K, p, floor_start, floor_decay, num_mc=100) {
+LinTSModel <- function(K, p, floor_start, floor_decay, num_mc=100, is_contextual = TRUE) {
   model <- list()
   model$num_mc <- num_mc
   model$K <- K
@@ -18,7 +18,7 @@ LinTSModel <- function(K, p, floor_start, floor_decay, num_mc=100) {
   return(model)
 }
 
-update_thompson <- function(xs, ws, yobs, model) {
+update_thompson <- function(xs, ws, yobs, model, is_contextual = TRUE) {
   for (w in 1:model$K) {
     if (is_contextual) {
       model$X[[w]] <- rbind(model$X[[w]], cbind(xs[ws == w,]))
@@ -106,6 +106,8 @@ run_experiment <- function(xs, ys, floor_start, floor_decay, batch_sizes, is_con
       bandit_model <- update_thompson(
         xs[f:l,], ws[f:l], yobs[f:l], bandit_model)
     }
+    # probs are assignment probabilities e_t(X_s, w) of shape [A, A, K]
+    data <- list(yobs = yobs, ws = ws, xs = xs, ys = ys, probs = probs, fitted_bandit_model = bandit_model)
     
   }else{
     # non-contextual bandit data
@@ -113,11 +115,9 @@ run_experiment <- function(xs, ys, floor_start, floor_decay, batch_sizes, is_con
     ws[1:batch_size_cumsum[1]] <- sample(1:K, batch_size_cumsum[1], replace = TRUE) 
     yobs[1:batch_size_cumsum[1]] <- ys[cbind(1:batch_size_cumsum[1], ws[1:batch_size_cumsum[1]])]
     probs[1:batch_size_cumsum[1], , ] <- array(1/K, dim = c(batch_size_cumsum[1], A, K))
+    # probs are assignment probabilities e_t(X_s, w) of shape [A, A, K]
+    data <- list(yobs = yobs, ws = ws, xs = xs, ys = ys, probs = probs)
   }
-  
-  # probs are assignment probabilities e_t(X_s, w) of shape [A, A, K]
-  data <- list(yobs = yobs, ws = ws, xs = xs, ys = ys, probs = probs, fitted_bandit_model = bandit_model)
-  
   return(data)
 }
 
@@ -165,4 +165,14 @@ balwts <- function(ws, probs) {
     balwts[a, ] <- 1/probs[a, a, ]
   }
   return(balwts)
+}
+
+calculate_mu_hat <- function(results) {
+  if (!is.null(results$fitted_bandit_model)) {
+    # Contextual Thompson Sampling
+    mu_transpose <- t(results$fitted_bandit_model$mu)
+    xs_1 <- cbind(1, results$xs)
+    mu_hat <- xs_1 %*% mu_transpose
+  return(mu_hat)
+  }
 }
