@@ -1,6 +1,6 @@
 # Bandit Contextual Inference Functions 
 
-aw_scores <- function(yobs, ws, balwts, K, mu_hat=NULL) {  ## TODO: Fix the function here
+aw_scores <- function(yobs, ws, balwts, K, mu_hat=NULL) {
   # Compute AIPW/doubly robust scores. Return IPW scores if muhat is NULL.
   # INPUT
   #     - yobs: observed rewards, shape [A]

@@ -39,3 +39,5 @@ vignettes/*.pdf
 .Renviron
 **/.DS_Store
 code/experiment_data.RData
+code/cumulative_assignment_plot.png
+code/Rplot.png

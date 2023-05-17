@@ -31,3 +31,10 @@ balwts <- balwts(results$ws, results$probs)
 
 # Save results, mu_hat and balwts
 save(results, balwts, mu_hat, file="experiment_data.RData")
+
+# plot the cumulative assignment graph for every arm and every batch size, x-axis is the number of observations, y-axis is the cumulative assignment
+plot_cumulative_assignment(results, batch_sizes)
+# save plot in the same directory, save the image in high resolution
+dev.copy(png, file="cumulative_assignment_plot.png", width=780, height=780)
+
+

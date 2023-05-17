@@ -72,10 +72,11 @@ run_experiment <- function(xs, ys, floor_start, floor_decay, batch_sizes, is_con
   K <- dim(ys)[2] # K: the number of arms
   ws <- numeric(A) # the index of the selected arm. The ws array is a 1-dimensional array.
   yobs <- numeric(A)
-  probs <- array(0, dim = c(A, A, K))
-  Probs_t <- matrix(0, A, K)
+
   
   if(is_contextual){
+    probs <- array(0, dim = c(A, A, K))
+    Probs_t <- matrix(0, A, K)
     p <- dim(xs)[2]
     bandit_model <- LinTSModel(p = p, K = K, floor_start = floor_start, floor_decay = floor_decay)
     draw_model <- draw_thompson
@@ -111,11 +112,11 @@ run_experiment <- function(xs, ys, floor_start, floor_decay, batch_sizes, is_con
     
   }else{
     # non-contextual bandit data
-    batch_size_cumsum <- cumsum(batch_sizes)
+    probs <- array(0, dim = c(A, A, K))
+    batch_size_cumsum <- A
     ws[1:batch_size_cumsum[1]] <- sample(1:K, batch_size_cumsum[1], replace = TRUE) 
     yobs[1:batch_size_cumsum[1]] <- ys[cbind(1:batch_size_cumsum[1], ws[1:batch_size_cumsum[1]])]
     probs[1:batch_size_cumsum[1], , ] <- array(1/K, dim = c(batch_size_cumsum[1], A, K))
-    # probs are assignment probabilities e_t(X_s, w) of shape [A, A, K]
     data <- list(yobs = yobs, ws = ws, xs = xs, ys = ys, probs = probs)
   }
   return(data)
@@ -176,3 +177,29 @@ calculate_mu_hat <- function(results) {
   return(mu_hat)
   }
 }
+
+# generate plot_cumulative_assignment function
+plot_cumulative_assignment <- function(results, batch_sizes) {
+  # Plot the cumulative assignment graph for every arm and every batch size, x-axis is the number of observations, y-axis is the cumulative assignment
+  # INPUT:
+  # - results: results from run_experiment function
+  # - batch_sizes: batch sizes used in the experiment
+  # OUTPUT:
+  # - plot of cumulative assignment graph
+  
+  # access dataset components
+  ws <- results$ws
+  A <- length(ws)
+  K <- dim(results$probs)[3]
+  batch_size_cumsum <- cumsum(batch_sizes)
+  
+# plot the cumulative assignment graph for every arm and every batch size, x-axis is the number of observations, y-axis is the cumulative assignment. 
+  par(mfrow=c(2, 3))
+  for (k in 1:K) {
+    plot(1:A, cumsum(ws==k), type="l", xlab="Number of Observations", ylab="Cumulative Assignment", main=paste("Arm", k))
+    for (i in 1:length(batch_sizes)) {
+      abline(v=batch_size_cumsum[i], col="#00ccff")
+    }
+  }
+}
+

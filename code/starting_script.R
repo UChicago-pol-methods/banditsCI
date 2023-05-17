@@ -5,7 +5,7 @@ cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2",
                "#D55E00", "#CC79A7")
 
 ## Functions
-source('bernoulli_bandit_utils.r')
+# source('bernoulli_bandit_utils.r')
 source('adaptive_utils.R')
 
 # Read in data
@@ -25,8 +25,8 @@ aipw_scoresR_learn <- aw_scores(
 
 ## Hyperparameters
 # Number of treatment arms: W is the variable representing the treatment arms. K is the number of treatment arms. A is the number of observations.
-K <- ncol(results$e)
-A <- results$T
+K <- ncol(results$ys)
+A <- nrow(results$ys)
 
 
 # Get estimates for policies
@@ -64,79 +64,3 @@ out_full_te1 <- output_estimates(
 out_full_te2 <- output_estimates(
   contrasts = 'separate')
 
-# Tidy the data frame
-## Panel for policy values
-estimates_panel_df <- do.call(rbind.data.frame, out_full)
-estimates_panel_df$weights <- rep(rownames(out_full[[1]]), 
-                                  length(out_full))
-estimates_panel_df$term <- rep(levels(results$e), each = nrow(out_full[[1]]))
-
-## Panel for policy contrast with the first approach
-estimates_panel_df_te1 <- do.call(rbind.data.frame, out_full_te1)
-estimates_panel_df_te1$weights <- rep(rownames(out_full_te1[[1]]), 
-                                      length(out_full_te1))
-estimates_panel_df_te1$term <- rep(levels(results$e)[-1], each = nrow(out_full_te1[[1]]))
-estimates_panel_df_te1$Respondent <- stringr::str_to_sentence(gsub('_', '',
-                                                                   gsub('.*_R_', '', estimates_panel_df_te1$term)))
-estimates_panel_df_te1$Headline <- stringr::str_to_sentence(gsub('_', '',
-                                                                 gsub('H_|_R_.*', '', estimates_panel_df_te1$term)))
-## Panel for policy contrast with the second approach
-estimates_panel_df_te2 <- do.call(rbind.data.frame, out_full_te2)
-estimates_panel_df_te2$weights <- rep(rownames(out_full_te2[[1]]), 
-                                      length(out_full_te2))
-estimates_panel_df_te2$term <- rep(levels(results$e)[-1], each = nrow(out_full_te2[[1]]))
-estimates_panel_df_te2$Respondent <- stringr::str_to_sentence(gsub('_', '',
-                                                                   gsub('.*_R_', '', estimates_panel_df_te2$term)))
-estimates_panel_df_te2$Headline <- stringr::str_to_sentence(gsub('_', '',
-                                                                 gsub('H_|_R_.*', '', estimates_panel_df_te2$term)))
-
-# Figure
-## Figure for policy contrast with the first approach
-ggplot(estimates_panel_df_te1, aes(x = estimate, y = Respondent, color = weights)) +
-  ggdist::stat_gradientinterval(aes(y = Respondent, 
-                                    xdist = distributional::dist_normal(estimate, std.error)), 
-                                .width = 0, size = 0, color = cbPalette[3], fill = cbPalette[3], 
-                                position = position_dodge(width=0.5)) +
-  geom_point(aes(x = estimate), size = 2, position = position_dodge(width=0.5)) +
-  geom_errorbar(aes(xmin = estimate - 1.96*std.error, xmax = estimate + 1.96*std.error), width = 0.05, 
-                position = position_dodge(width=0.5)) +
-  facet_grid(rows = vars(Respondent), cols = vars(Headline), scales = 'free_y') + 
-  ylab('Policy') + 
-  xlab('Estimate') +
-  geom_vline(xintercept = 0, colour = 'grey60', linetype = 2) +
-  labs(title = 'Response function, first approach, scores',
-       subtitle = 'Averages, learning split') +
-  theme_minimal() + 
-  theme(plot.title = element_text(hjust = 0.5),
-        panel.background = element_rect(fill = 'white'),
-        plot.background = element_rect(fill = 'white', color = 'white'),
-        # strip.text.y = element_blank()
-  ) + 
-  coord_cartesian(xlim = c(-1.5, 1))
-
-ggsave('../../tables-figures/estimates_te1.png')
-
-## Figure for policy contrast with the second approach
-ggplot(estimates_panel_df_te2, aes(x = estimate, y = Respondent, color = weights)) +
-  ggdist::stat_gradientinterval(aes(y = Respondent, 
-                                    xdist = distributional::dist_normal(estimate, std.error)), 
-                                .width = 0, size = 0, color = cbPalette[3], fill = cbPalette[3], 
-                                position = position_dodge(width=0.5)) +
-  geom_point(aes(x = estimate), size = 2, position = position_dodge(width=0.5)) +
-  geom_errorbar(aes(xmin = estimate - 1.96*std.error, xmax = estimate + 1.96*std.error), width = 0.05, 
-                position = position_dodge(width=0.5)) +
-  facet_grid(rows = vars(Respondent), cols = vars(Headline), scales = 'free_y') + 
-  ylab('Policy') + 
-  xlab('Estimate') +
-  geom_vline(xintercept = 0, colour = 'grey60', linetype = 2) +
-  labs(title = 'Response function, second approach, scores',
-       subtitle = 'Averages, learning split') +
-  theme_minimal() + 
-  theme(plot.title = element_text(hjust = 0.5),
-        panel.background = element_rect(fill = 'white'),
-        plot.background = element_rect(fill = 'white', color = 'white'),
-        # strip.text.y = element_blank()
-  ) + 
-  coord_cartesian(xlim = c(-1.5, 1))
-
-ggsave('../../tables-figures/estimates_te2.png')
