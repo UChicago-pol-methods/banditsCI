@@ -1,6 +1,6 @@
 # Run Thompson Experiment
 
-source('Thompson Sampling.R')
+source('experiment_utils.R')
        
 # Set parameters
 floor_start <- 5
@@ -21,8 +21,7 @@ K <- data[[1]]$K
 mus <- data[[2]]
 
 # Run experiment
-## Non Contextual: is_contextual = FALSE
-results <- run_experiment(xs, ys, floor_start, floor_decay, batch_sizes, is_contextual = TRUE)
+results <- run_experiment(ys, floor_start, floor_decay, batch_sizes, xs)
 
 mu_hat <- calculate_mu_hat(results)
 
@@ -38,3 +37,7 @@ plot_cumulative_assignment(results, batch_sizes)
 dev.copy(png, file="cumulative_assignment_plot.png", width=780, height=780)
 
 
+# Non-contextual experiment
+results <- run_experiment(ys, floor_start, floor_decay, batch_sizes)
+
+plot_cumulative_assignment(results, batch_sizes)
