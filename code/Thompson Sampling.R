@@ -11,22 +11,30 @@ LinTSModel <- function(K, p, floor_start, floor_decay, num_mc=100) {
   model$floor_decay <- floor_decay
   model$mu <- matrix(0, nrow=K, ncol=p+1)
   model$V <- array(0, dim=c(K, p+1, p+1))
-  model$X <- replicate(K, matrix(0, nrow=0, ncol=p))
-  model$y <- replicate(K, matrix(0, nrow=0, ncol=1))
+  if (is_contextual) {
+    model$X <- replicate(K, matrix(0, nrow=0, ncol=p))
+    model$y <- replicate(K, matrix(0, nrow=0, ncol=1))
+  }
   return(model)
 }
 
 update_thompson <- function(xs, ws, yobs, model) {
   for (w in 1:model$K) {
-    model$X[[w]] <- rbind(model$X[[w]], cbind(xs[ws == w,]))
-    model$y[[w]] <- rbind(model$y[[w]], cbind(yobs[ws == w, drop = FALSE]))
-    regr <- cv.glmnet(model$X[[w]], model$y[[w]]) 
-    coef <- coef(regr, s = 'lambda.1se')
-    yhat <- predict(regr, s = 'lambda.1se', model$X[[w]])
-    model$mu[w,] <- coef[, drop = TRUE] # intercept and coefficients of predictors
-    X <- cbind(1, model$X[[w]])
-    B <- t(X) %*% X + regr$lambda.1se * diag(model$p + 1)
-    model$V[w,,] <- array(mean((model$y[[w]] - yhat)^2) * solve(B))
+    if (is_contextual) {
+      model$X[[w]] <- rbind(model$X[[w]], cbind(xs[ws == w,]))
+      model$y[[w]] <- rbind(model$y[[w]], cbind(yobs[ws == w, drop = FALSE]))
+      regr <- cv.glmnet(model$X[[w]], model$y[[w]]) 
+      coef <- coef(regr, s = 'lambda.1se')
+      yhat <- predict(regr, s = 'lambda.1se', model$X[[w]])
+      model$mu[w,] <- coef[, drop = TRUE] # intercept and coefficients of predictors
+      X <- cbind(1, model$X[[w]])
+      B <- t(X) %*% X + regr$lambda.1se * diag(model$p + 1)
+      model$V[w,,] <- array(mean((model$y[[w]] - yhat)^2) * solve(B))
+    } else {
+      yw <- yobs[ws == w]
+      model$mu[w,] <- mean(yw)
+      model$V[w,,] <- var(yw)
+    }
   }
   return(model)
 }
@@ -42,7 +50,7 @@ draw_thompson <- function(xs, model, start, end, current_t) {
     coeff[w,,] <- mvrnorm(model$num_mc, model$mu[w,], model$V[w,,]) # random.multivariate_normal from different contexts
   }
   
-  draws <- apply(coeff, c(1,2), function(x) {xt %*% x}) # TODO double check this line
+  draws <- apply(coeff, c(1,2), function(x) {xt %*% x}) # double check this line
   
   ps <- array(NA, dim=c(A, K))
   for (s in 1:A) { # TODO and double check that draws is doing the right thing here
@@ -53,8 +61,8 @@ draw_thompson <- function(xs, model, start, end, current_t) {
   return(list(w=w, ps=ps))
 }
 
-run_experiment <- function(xs, ys, floor_start, floor_decay, batch_sizes) {
-  # Run contextual bandit experiment
+run_experiment <- function(xs, ys, floor_start, floor_decay, batch_sizes, is_contextual = TRUE) {
+  # Run bandit experiment
   # INPUT:
   # - xs: covariate X_t of shape [A, p]
   # - ys: potential outcomes of shape [A, K]
@@ -62,41 +70,51 @@ run_experiment <- function(xs, ys, floor_start, floor_decay, batch_sizes) {
   # - pulled arms, observed rewards, assignment probabilities
   A <- dim(ys)[1] # A: the number of observations 
   K <- dim(ys)[2] # K: the number of arms
-  p <- dim(xs)[2]
   ws <- numeric(A) # the index of the selected arm. The ws array is a 1-dimensional array.
   yobs <- numeric(A)
   probs <- array(0, dim = c(A, A, K))
   Probs_t <- matrix(0, A, K)
   
-  bandit_model <- LinTSModel(p = p, K = K, floor_start = floor_start, floor_decay = floor_decay)
-  draw_model <- draw_thompson
-  
-  # uniform sampling at the first batch
-  batch_size_cumsum <- cumsum(batch_sizes) # 
-  ws[1:batch_size_cumsum[1]] <- sample(1:K, batch_size_cumsum[1], replace = TRUE) 
-  yobs[1:batch_size_cumsum[1]] <- ys[cbind(1:batch_size_cumsum[1], ws[1:batch_size_cumsum[1]])]
-  probs[1:batch_size_cumsum[1], , ] <- array(1/K, dim = c(batch_size_cumsum[1], A, K))
-  Probs_t[1:batch_size_cumsum[1], ] <- matrix(1/K, batch_size_cumsum[1], K)
-  
-  bandit_model <- update_thompson(xs[1:batch_size_cumsum[1], ], 
-                                  ws[1:batch_size_cumsum[1]], 
-                                  yobs[1:batch_size_cumsum[1]], 
-                                  bandit_model)
-  
-  # adaptive sampling at the subsequent batches
-  for (idx in 1:(length(batch_sizes)-1)) {
-    f <- batch_size_cumsum[idx] + 1
-    l <- batch_size_cumsum[idx + 1] 
-    draw <- draw_thompson(xs, bandit_model, start=f, end=l, current_t = f)
-    w <- draw$w
-    p <- draw$p
-    yobs[f:l] <- ys[cbind(f:l, w)]
-    ws[f:l] <- w
-    probs[f:l, , ] <- array(p, dim = c(l - f + 1, A, K))
-    Probs_t[f:l, ] <- p[f:l, ]
-    bandit_model <- update_thompson(
-      xs[f:l,], ws[f:l], yobs[f:l], bandit_model)
+  if(is_contextual){
+    p <- dim(xs)[2]
+    bandit_model <- LinTSModel(p = p, K = K, floor_start = floor_start, floor_decay = floor_decay)
+    draw_model <- draw_thompson
+    
+    # uniform sampling at the first batch
+    batch_size_cumsum <- cumsum(batch_sizes) # 
+    ws[1:batch_size_cumsum[1]] <- sample(1:K, batch_size_cumsum[1], replace = TRUE) 
+    yobs[1:batch_size_cumsum[1]] <- ys[cbind(1:batch_size_cumsum[1], ws[1:batch_size_cumsum[1]])]
+    probs[1:batch_size_cumsum[1], , ] <- array(1/K, dim = c(batch_size_cumsum[1], A, K))
+    Probs_t[1:batch_size_cumsum[1], ] <- matrix(1/K, batch_size_cumsum[1], K)
+    
+    bandit_model <- update_thompson(xs[1:batch_size_cumsum[1], ], 
+                                    ws[1:batch_size_cumsum[1]], 
+                                    yobs[1:batch_size_cumsum[1]], 
+                                    bandit_model)
+    
+    # adaptive sampling at the subsequent batches
+    for (idx in 1:(length(batch_sizes)-1)) {
+      f <- batch_size_cumsum[idx] + 1
+      l <- batch_size_cumsum[idx + 1] 
+      draw <- draw_thompson(xs, bandit_model, start=f, end=l, current_t = f)
+      w <- draw$w
+      p <- draw$p
+      yobs[f:l] <- ys[cbind(f:l, w)]
+      ws[f:l] <- w
+      probs[f:l, , ] <- array(p, dim = c(l - f + 1, A, K))
+      Probs_t[f:l, ] <- p[f:l, ]
+      bandit_model <- update_thompson(
+        xs[f:l,], ws[f:l], yobs[f:l], bandit_model)
+    }
+    
+  }else{
+    # non-contextual bandit data
+    batch_size_cumsum <- cumsum(batch_sizes)
+    ws[1:batch_size_cumsum[1]] <- sample(1:K, batch_size_cumsum[1], replace = TRUE) 
+    yobs[1:batch_size_cumsum[1]] <- ys[cbind(1:batch_size_cumsum[1], ws[1:batch_size_cumsum[1]])]
+    probs[1:batch_size_cumsum[1], , ] <- array(1/K, dim = c(batch_size_cumsum[1], A, K))
   }
+  
   # probs are assignment probabilities e_t(X_s, w) of shape [A, A, K]
   data <- list(yobs = yobs, ws = ws, xs = xs, ys = ys, probs = probs, fitted_bandit_model = bandit_model)
   

@@ -6,11 +6,11 @@ source('bernoulli_bandit_utils.R')
 # Set parameters
 floor_start <- 5
 floor_decay <- 0.9
-batch_sizes <- c(100, 200, 300, 400, 500)
+batch_sizes <- c(100, 200, 300, 400)
 
-# To generate a dataset with 1500 observations, 10 covariates, and 5 arms
+# To generate a dataset with 1000 observations, 10 covariates, and 5 arms
 set.seed(123)
-data <- generate_bandit_data(n=1500, p=10, K=5, noise_std=1.0, signal_strength=1.0)
+data <- generate_bandit_data(n=1000, p=10, K=5, noise_std=1.0, signal_strength=1.0)
 
 # access dataset components
 xs <- data[[1]]$xs
@@ -22,7 +22,7 @@ K <- data[[1]]$K
 mus <- data[[2]]
 
 # Run experiment
-results <- run_experiment(xs, ys, floor_start, floor_decay, batch_sizes)
+results <- run_experiment(xs, ys, floor_start, floor_decay, batch_sizes, is_contextual)
 
 # balwts: inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
 balwts <- balwts(results$ws, results$probs)
