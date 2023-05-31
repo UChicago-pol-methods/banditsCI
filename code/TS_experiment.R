@@ -20,24 +20,32 @@ p <- data[[1]]$p
 K <- data[[1]]$K
 mus <- data[[2]]
 
-# Run experiment
+# Run contextual experiment
 results <- run_experiment(ys, floor_start, floor_decay, batch_sizes, xs)
 
-mu_hat <- calculate_mu_hat(results)
-
-# balwts: inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
-balwts <- balwts(results$ws, results$probs)
-
-# Save results, mu_hat and balwts
-save(results, balwts, mu_hat, file="experiment_data.RData")
-
-# plot the cumulative assignment graph for every arm and every batch size, x-axis is the number of observations, y-axis is the cumulative assignment
-plot_cumulative_assignment(results, batch_sizes)
+  mu_hat <- calculate_mu_hat(results)
+  
+  # inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
+  balwts <- balwts(results$ws, results$probs)
+  
+  # Save results, mu_hat and balwts
+  save(results, balwts, mu_hat, file="experiment_data_contextual.RData")
+  
+  # plot the cumulative assignment graph for every arm and every batch size, x-axis is the number of observations, y-axis is the cumulative assignment
+  plot_cumulative_assignment(results, batch_sizes)
 # save plot in the same directory, save the image in high resolution
-dev.copy(png, file="cumulative_assignment_plot.png", width=780, height=780)
+dev.copy(png, file="contextual_cumulative_assignment_plot.png", width=1138, height=715)
 
 
 # Non-contextual experiment
 results <- run_experiment(ys, floor_start, floor_decay, batch_sizes)
-
-plot_cumulative_assignment(results, batch_sizes)
+  mu_hat <- calculate_mu_hat(results)
+  
+  # inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
+  balwts <- balwts(results$ws, results$probs)
+  
+  # Save results, mu_hat and balwts
+  save(results, balwts, mu_hat, file="experiment_data_noncontextual.RData")
+  
+  plot_cumulative_assignment(results, batch_sizes)
+  dev.copy(png, file="noncontextual_cumulative_assignment_plot.png", width=1138, height=715)

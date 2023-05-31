@@ -4,12 +4,12 @@ library(ggplot2)
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", 
                "#D55E00", "#CC79A7")
 
-## Functions
-# source('bernoulli_bandit_utils.r')
+# Functions
 source('adaptive_utils.R')
 
 # Read in data
-load('experiment_data.RData')
+load('experiment_data_contextual.RData')
+load('experiment_data_noncontextual.RData')
 
 # saved hypothetical contextual probabilities 
 # contextual probabilities: A * A * K matrix for time, contexts, treatment arms
@@ -20,7 +20,7 @@ aipw_scoresR_learn <- aw_scores(
   ws = results$ws, 
   yobs = results$yobs, 
   mu_hat = mu_hat, 
-  K = K,
+  K = ncol(results$ys),
   balwts = balwts)
 
 ## Hyperparameters
@@ -63,4 +63,40 @@ out_full_te1 <- output_estimates(
 ## The second approach takes asymptotically normal inference about \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
 out_full_te2 <- output_estimates(
   contrasts = 'separate')
+
+
+# Figure
+library(ggplot2)
+
+# Combine the data frames into a single data frame
+combinedMatrix <- do.call(rbind, out_full_te2)
+combinedMatrix <- as.data.frame(combinedMatrix)
+
+# Add an .id column to indicate the arm number
+n_arms <- length(out_full_te2)
+n_reps <- nrow(out_full_te2[[1]])
+combinedMatrix$id <- rep(1:n_arms, each = n_reps)
+
+# Add a column to indicate the arm name
+n_arms <- n_arms+1
+combinedMatrix$arm <- rep(paste0("arm", 2:n_arms), each = n_reps)
+
+# Add a method column
+values <- c("uniform", "non_contextual_minvar", "contextual_minvar", 
+            "non_contextual_stablevar", "contextual_stablevar", "non_contextual_twopoint")
+combinedMatrix$method <- rep(values, length.out = nrow(combinedMatrix))
+
+
+# Create the plot
+plot <- ggplot(combinedMatrix, aes(x = estimate, y = method)) +
+  geom_point(aes(x = estimate), size = 2, position = position_dodge(width=0.5)) +
+  geom_errorbar(aes(xmin = estimate - 1.96*std.error, xmax = estimate + 1.96*std.error), width = 0.05, 
+                position = position_dodge(width=0.5)) +
+  xlab("Coefficient Estimate") +
+  ylab("weights") +
+  ggtitle("Coefficients and Confidence Intervals") +
+  facet_wrap(~ arm, ncol = 2)
+
+# Print the plot
+print(plot)
 

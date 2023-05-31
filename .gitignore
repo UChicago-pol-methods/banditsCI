@@ -41,3 +41,4 @@ vignettes/*.pdf
 code/experiment_data.RData
 code/cumulative_assignment_plot.png
 code/Rplot.png
+code/estimate_plot.png

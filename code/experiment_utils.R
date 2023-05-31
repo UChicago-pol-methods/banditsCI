@@ -218,20 +218,20 @@ generate_bandit_data <- function(
 }
 
 # balwts: inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
-balwts <- function(
-    ws, 
-    probs
-) {
+balwts <- function(ws, probs) {
   A <- length(ws)
-  K <- dim(probs)[length(dim(probs))]
-  balwts <- rep(NA, A)
-  
-  if(length(dim(probs))>2){
+  if (length(dim(probs)) == 2) {
+    K <- dim(probs)[2]
+    balwts <- matrix(0, nrow = A, ncol = K)
     for (a in 1:A) {
-      balwts[a] <- 1/probs[a, a, ws[a]]
+      balwts[a, ws[a]] <- 1/probs[a, ws[a]]
     }
   } else {
-    balwts <- 1/probs[cbind(1:A, ws)]
+    K <- dim(probs)[3]
+    balwts <- array(0, dim = c(A, K))
+    for (a in 1:A) {
+      balwts[a, ] <- 1/probs[a, a, ]
+    }
   }
   return(balwts)
 }
@@ -265,9 +265,9 @@ plot_cumulative_assignment <- function(
   batch_size_cumsum <- cumsum(batch_sizes)
   
   dat <- matrix(0, nrow = A, ncol = K)
-  dat[cbind(1:A, ws)] <- 1
-  dat <- apply(dat, 2, cumsum)
-  matplot(dat, type = c("l"), col =1:K)
+  dat[cbind(1:A, ws)] <- 1 
+  dat <- apply(dat, 2, cumsum) 
+  matplot(dat, type = c("l"), col =1:K) 
   abline(v=batch_size_cumsum, col="#00ccff")
   legend("topleft", legend = 1:K, col=1:K, lty=1:K)
 }
