@@ -16,6 +16,7 @@ LinTSModel <- function(K,
   model$floor_start <- floor_start
   model$floor_decay <- floor_decay
   model$y <- replicate(K, matrix(0, nrow=0, ncol=1))
+  model$ps <- replicate(K, matrix(0, nrow=0, ncol=1))
   if (is_contextual) {
     model$mu <- matrix(0, nrow=K, ncol=p+1)
     model$V <- array(0, dim=c(K, p+1, p+1))
@@ -28,18 +29,26 @@ update_thompson <- function(
     ws, 
     yobs, 
     model, 
-    xs = NULL
+    xs = NULL,
+    ps = NULL,
+    balanced = FALSE
 ) {
   for (w in 1:model$K) {
     if (!is.null(xs)) {
-      model$X[[w]] <- rbind(model$X[[w]], cbind(xs[ws == w,]))
+      model$X[[w]] <- rbind(model$X[[w]], cbind(xs[ws == w,,drop = FALSE]))
       model$y[[w]] <- rbind(model$y[[w]], cbind(yobs[ws == w, drop = FALSE]))
+      model$ps[[w]] <- c(model$ps[[w]], ps[cbind(ws == w,w)])
       regr <- cv.glmnet(model$X[[w]], model$y[[w]]) 
       coef <- coef(regr, s = 'lambda.1se')
       yhat <- predict(regr, s = 'lambda.1se', model$X[[w]])
       model$mu[w,] <- coef[, drop = TRUE] # intercept and coefficients of predictors
       X <- cbind(1, model$X[[w]])
-      B <- t(X) %*% X + regr$lambda.1se * diag(model$p + 1)
+      if(balanced){
+        W <- 1/model$ps[[w]] # balancing weights
+        B <- t(X) %*% diag(W) %*% X + regr$lambda.1se * diag(model$p + 1)
+      } else {
+        B <- t(X) %*% X + regr$lambda.1se * diag(model$p + 1) 
+      }
       model$V[w,,] <- array(mean((model$y[[w]] - yhat)^2) * solve(B))
     } else {
       model$y[[w]] <- rbind(model$y[[w]], cbind(yobs[ws == w, drop = FALSE]))
@@ -100,7 +109,8 @@ run_experiment <- function(
     floor_start, 
     floor_decay, 
     batch_sizes, 
-    xs = NULL
+    xs = NULL,
+    balanced = FALSE
 ) {
   # Run bandit experiment
   # INPUT:
@@ -135,7 +145,9 @@ run_experiment <- function(
     bandit_model <- update_thompson(ws = ws[1:batch_size_cumsum[1]], 
                                     yobs = yobs[1:batch_size_cumsum[1]], 
                                     model = bandit_model,
-                                    xs = xs[1:batch_size_cumsum[1], ])
+                                    xs = xs[1:batch_size_cumsum[1], ],
+                                    ps = matrix(1/K, nrow = A, ncol = K)[1:batch_size_cumsum[1], ],
+                                    balanced = balanced)
   } else { # non-contextual case
     bandit_model <- update_thompson(ws = ws[1:batch_size_cumsum[1]], 
                                     yobs = yobs[1:batch_size_cumsum[1]], 
@@ -152,13 +164,15 @@ run_experiment <- function(
     ps <- draw$ps
     yobs[ff:l] <- ys[cbind(ff:l, w)]
     ws[ff:l] <- w
-    probs[ff:l, , ] <- array(ps, dim = c(l - ff + 1, A, K))
+    probs[ff:l, , ] <- aperm(sapply(ff:l, function(x) ps, simplify = "array"), c(3,1,2))
     
     if(!is.null(xs)){ # contextual case
       bandit_model <- update_thompson(ws = ws[ff:l], 
                                       yobs = yobs[ff:l], 
                                       model = bandit_model,
-                                      xs = xs[ff:l,])
+                                      xs = xs[ff:l,],
+                                      ps = ps[ff:l,],
+                                      balanced = balanced)
     } else { # non-contextual case
       bandit_model <- update_thompson(ws = ws[ff:l], 
                                       yobs = yobs[ff:l], 
