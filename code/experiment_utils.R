@@ -199,35 +199,68 @@ impose_floor <- function(
   return(new)
 }
 
-generate_bandit_data <- function(
-    n, 
-    p, 
-    K, 
-    noise_std=1.0, 
-    signal_strength=1.0
-) {
+generate_bandit_data <- function(X=NULL, 
+                                 y=NULL, 
+                                 noise_std=1.0, 
+                                 signal_strength=1.0) {
   # Generate covariates and potential outcomes from a classification dataset.
-  # INPUT:
-  # - noise_std: noise standard deviation
-  # - signal_strength: signal strength multiplier
-  # OUTPUT:
-  # - data: covariates and potential outcomes
-  # - mus: arm expected reward over the covariate space
   
-  X <- matrix(rnorm(n*p), ncol=p) # - X: covariates of shape [A, p]
-  y <- sample(1:K, n, replace=TRUE) # - y: labels of shape [A,]
-  shuffler <- sample.int(n)
-  xs <- X[shuffler, ]
+  shuffler <- sample(1:nrow(X))
+  xs <- X[shuffler,]
   ys <- y[shuffler]
-  A <- nrow(xs)
-  A <- min(A, 20000)
-  xs <- xs[1:A, ]
-  ys <- ys[1:A]
-  muxs <- matrix(0, nrow=A, ncol=K)
-  muxs[cbind(1:A, as.numeric(ys))] <- signal_strength
-  ys <- muxs + rnorm(A*K, 0, noise_std)
-  mus <- table(y)/A
-  data <- list(xs=xs, ys=ys, muxs=muxs, A=A, p=ncol(xs), K=K)
+  T <- nrow(xs)
+  T <- min(T, 20000)
+  xs <- xs[1:T,]
+  ys <- ys[1:T]
+  K <- length(unique(ys))
+  muxs <- matrix(0, nrow=T, ncol=K)
+  for (k in 1:K) {
+    muxs[,k] <- as.integer(ys == unique(ys)[k]) * signal_strength
+  }
+  ys <- muxs + rnorm(n=T*K, mean=0, sd=noise_std)
+  mus <- table(y) / T
+  data <- list(xs=xs, ys=ys, muxs=muxs, T=T, p=ncol(xs), K=K)
+  return(list(data, mus))
+}
+
+simple_tree_data <- function(T, K=5, p=10, noise_std=1.0, split=1.676, signal_strength=1.0, seed=NULL, noise_form='normal') {
+  # Generate covariates and potential outcomes of a synthetic dataset.
+  
+  stopifnot(p >= 2) # to check the input parameters satisfy certain conditions
+  stopifnot(K >= 4)
+  stopifnot(split >= 0)
+  
+  set.seed(seed)
+  # Generate experimental data
+  xs <- matrix(rnorm(T*p), ncol=p)
+  
+  r0 <- (xs[,1] < split) & (xs[,2] < split)
+  r1 <- (xs[,1] < split) & (xs[,2] > split)
+  r2 <- (xs[,1] > split) & (xs[,2] < split)
+  r3 <- (xs[,1] > split) & (xs[,2] > split)
+  
+  wxs <- matrix(0, nrow=T, ncol=K)
+  wxs[r0,1] <- 1
+  wxs[r1,2] <- 1
+  wxs[r2,3] <- 1
+  wxs[r3,4] <- 1
+  muxs <- wxs * signal_strength
+  if (noise_form == 'normal') {
+    ys <- muxs + matrix(rnorm(T*K, mean=0, sd=noise_std), ncol=K)
+  } else {
+    ys <- muxs + matrix(runif(T*K, min=-noise_std, max=noise_std), ncol=K)
+  }
+  
+  mvn <- mvtnorm::pmvnorm(lower=rep(-Inf,2), upper=c(split, split), mean=rep(0,2), corr=diag(2))
+  mus <- rep(0, K)
+  mus[1] <- mvn
+  mus[2] <- mvtnorm::pmvnorm(lower=c(-Inf, split), upper=c(split, Inf), mean=rep(0,2), corr=diag(2)) - mvn
+  mus[3] <- mvtnorm::pmvnorm(lower=c(split, -Inf), upper=c(Inf, split), mean=rep(0,2), corr=diag(2)) - mvn
+  mus[4] <- mvtnorm::pmvnorm(lower=c(-Inf, -Inf), upper=c(-split, -split), mean=rep(0,2), corr=diag(2))
+  mus <- mus * signal_strength
+  
+  data <- list(xs=xs, ys=ys, muxs=muxs, wxs=wxs)
+  
   return(list(data, mus))
 }
 
