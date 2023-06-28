@@ -17,3 +17,5 @@ and functions that are based on [contextual confidence interval inference functi
 
 ## Experiment
 bernoulli_bandit_utils.R contains scripts to run experiments.
+
+Amir W testing pull request
