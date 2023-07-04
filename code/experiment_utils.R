@@ -78,7 +78,7 @@ draw_thompson <- function(
     }
     draws <- apply(coeff, c(1,2), function(x) {xt %*% x}) # double check this line
     
-    for (s in 1:nrow(ps)) { # TODO and double check that draws is doing the right thing here
+    for (s in 1:nrow(ps)) { # TODO double check that draws is doing the right thing here
       ps[s, ] <- table(factor(apply(draws[s, , ], 2, which.max), levels = 1:model$K) ) / model$num_mc
       ps[s, ] <- impose_floor(ps[s, ], floor)
     }
@@ -137,7 +137,8 @@ run_experiment <- function(
   
   # uniform sampling at the first batch
   batch_size_cumsum <- cumsum(batch_sizes) # 
-  ws[1:batch_size_cumsum[1]] <- sample(1:K, batch_size_cumsum[1], replace = TRUE) # TODO: make complete RA
+  ws[1:batch_size_cumsum[1]] <-  sample(c(rep(1:K, batch_size_cumsum[1] %/% K), 
+                                          sample(1:K, batch_size_cumsum[1] %% K))) 
   yobs[1:batch_size_cumsum[1]] <- ys[cbind(1:batch_size_cumsum[1], ws[1:batch_size_cumsum[1]])]
   probs[1:batch_size_cumsum[1], , ] <- array(1/K, dim = c(batch_size_cumsum[1], A, K))
   
