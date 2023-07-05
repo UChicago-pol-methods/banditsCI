@@ -33,17 +33,17 @@ ys <- data[[1]]$ys
 # p <- data[[1]]$p
 # K <- data[[1]]$K
 # mus <- data[[2]]
-# 
+#
 # # Data generation ### TODO
 # # Collect data from environment
 # set.seed(args.seed)
 # data_exp <- simple_tree_data(
-#   A=A, K=K, p=p, noise_std=config$noise_std, 
+#   A=A, K=K, p=p, noise_std=config$noise_std,
 #   split=config$split, signal_strength=args$signal, # Should we add Experiment configuration as well?
 #   noise_form=args$noise_form)
 # xs <- data_exp$xs
 # ys <- data_exp$ys
-# 
+#
 # # Run the contextual bandits experiment on the simulated data
 # data <- run_experiment(xs, ys, config, batch_sizes=batch_sizes)
 # yobs <- data$yobs
@@ -63,12 +63,12 @@ save(results, balwts, mu_hat, file="experiment_data_contextual.RData")
 
 # plot the cumulative assignment graph for every arm and every batch size, x-axis is the number of observations, y-axis is the cumulative assignment
 plot_cumulative_assignment(results, batch_sizes)
+
 # save plot in the same directory, save the image in high resolution
 dev.copy(png, file="contextual_cumulative_assignment_plot.png", width=1138, height=715)
 
 
 # Non-contextual experiment
-results <- run_experiment(ys, floor_start, floor_decay, batch_sizes)
 mu_hat <- calculate_mu_hat(results)
 
 # inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
