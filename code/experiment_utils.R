@@ -34,23 +34,49 @@ update_thompson <- function(
     balanced = FALSE
 ) {
   for (w in 1:model$K) {
-    if (!is.null(xs)) {
+    if (!is.null(xs)) { # contextual
       model$X[[w]] <- rbind(model$X[[w]], cbind(xs[ws == w,,drop = FALSE]))
       model$y[[w]] <- rbind(model$y[[w]], cbind(yobs[ws == w, drop = FALSE]))
       model$ps[[w]] <- c(model$ps[[w]], ps[cbind(ws == w,w)])
-      regr <- cv.glmnet(model$X[[w]], model$y[[w]]) 
+      regr <- cv.glmnet(model$X[[w]], model$y[[w]], alpha = 0) 
       coef <- coef(regr, s = 'lambda.1se')
-      yhat <- predict(regr, s = 'lambda.1se', model$X[[w]])
-      model$mu[w,] <- coef[, drop = TRUE] # intercept and coefficients of predictors
-      X <- cbind(1, model$X[[w]])
-      if(balanced){
+      
+      if(isTRUE(balanced)){
         W <- 1/model$ps[[w]] # balancing weights
-        B <- t(X) %*% diag(W) %*% X + regr$lambda.1se * diag(model$p + 1)
-      } else {
+        X <- model$X[[w]]
+        Y <- model$y[[w]]
+        n <- length(Y)
+        p <- ncol(X)
+        sd_y <- sqrt(var(Y)*(n-1)/n)[1,1]
+        mean_x <- colMeans(X)
+        sd_x <- sqrt(apply(X,2,var)*(n-1)/n)
+        X_scaled <- matrix(NA, nrow = n, ncol = p)
+        
+        for(i in 1:p){
+          X_scaled[,i] <- (X[,i] - mean_x[i])/sd_x[i]
+        }
+        X_scaled[is.na(X_scaled)] <- 0
+        
+        X_scaled_ones <- cbind(rep(1,n), X_scaled)
+        
+        B <- t(X_scaled_ones) %*% diag(W) %*% X_scaled_ones + regr$lambda.1se/sd_y*n * diag(x = c(0, rep(1,p)))
+        coefhat <- solve(B) %*% t(X_scaled_ones) %*% diag(W) %*% Y
+        coefhat_rescaled <- replace(coefhat[-1]/sd_x, sd_x==0, 0)
+        coefhat <- c(coefhat[1] - crossprod(mean_x, coefhat_rescaled), 
+                     coefhat_rescaled)
+        
+        model$mu[w,] <- coefhat
+        yhat <- cbind(1, X) %*% coefhat
+        
+        model$V[w,,] <- array(mean((model$y[[w]] - yhat)^2* W) * solve(B))
+      } else{
+        X <- cbind(1, model$X[[w]])
+        yhat <- predict(regr, s = 'lambda.1se', model$X[[w]])
+        model$mu[w,] <- coef[, drop = TRUE] # intercept and coefficients of predictors
         B <- t(X) %*% X + regr$lambda.1se * diag(model$p + 1) 
+        model$V[w,,] <- array(mean((model$y[[w]] - yhat)^2) * solve(B))
       }
-      model$V[w,,] <- array(mean((model$y[[w]] - yhat)^2) * solve(B))
-    } else {
+    } else { # noncontextual
       model$y[[w]] <- rbind(model$y[[w]], cbind(yobs[ws == w, drop = FALSE]))
     }
   }
@@ -78,7 +104,7 @@ draw_thompson <- function(
     }
     draws <- apply(coeff, c(1,2), function(x) {xt %*% x}) # double check this line
     
-    for (s in 1:nrow(ps)) { # TODO double check that draws is doing the right thing here
+    for (s in 1:nrow(ps)) { # TODO and double check that draws is doing the right thing here
       ps[s, ] <- table(factor(apply(draws[s, , ], 2, which.max), levels = 1:model$K) ) / model$num_mc
       ps[s, ] <- impose_floor(ps[s, ], floor)
     }
@@ -110,7 +136,7 @@ run_experiment <- function(
     floor_decay, 
     batch_sizes, 
     xs = NULL,
-    balanced = FALSE
+    balanced = NULL
 ) {
   # Run bandit experiment
   # INPUT:
@@ -137,8 +163,7 @@ run_experiment <- function(
   
   # uniform sampling at the first batch
   batch_size_cumsum <- cumsum(batch_sizes) # 
-  ws[1:batch_size_cumsum[1]] <-  sample(c(rep(1:K, batch_size_cumsum[1] %/% K), 
-                                          sample(1:K, batch_size_cumsum[1] %% K))) 
+  ws[1:batch_size_cumsum[1]] <- sample(1:K, batch_size_cumsum[1], replace = TRUE) # TODO: make complete RA
   yobs[1:batch_size_cumsum[1]] <- ys[cbind(1:batch_size_cumsum[1], ws[1:batch_size_cumsum[1]])]
   probs[1:batch_size_cumsum[1], , ] <- array(1/K, dim = c(batch_size_cumsum[1], A, K))
   
@@ -209,22 +234,22 @@ generate_bandit_data <- function(X=NULL,
   shuffler <- sample(1:nrow(X))
   xs <- X[shuffler,]
   ys <- y[shuffler]
-  T <- nrow(xs)
-  T <- min(T, 20000)
-  xs <- xs[1:T,]
-  ys <- ys[1:T]
+  A <- nrow(xs)
+  A <- min(A, 20000)
+  xs <- xs[1:A,]
+  ys <- ys[1:A]
   K <- length(unique(ys))
-  muxs <- matrix(0, nrow=T, ncol=K)
+  muxs <- matrix(0, nrow=A, ncol=K)
   for (k in 1:K) {
     muxs[,k] <- as.integer(ys == unique(ys)[k]) * signal_strength
   }
-  ys <- muxs + rnorm(n=T*K, mean=0, sd=noise_std)
-  mus <- table(y) / T
-  data <- list(xs=xs, ys=ys, muxs=muxs, T=T, p=ncol(xs), K=K)
-  return(list(data, mus))
+  ys <- muxs + rnorm(n=A*K, mean=0, sd=noise_std)
+  mus <- table(y) / A
+  data <- list(xs=xs, ys=ys, muxs=muxs, A=A, p=ncol(xs), K=K)
+  return(list(data = data, mus = mus))
 }
 
-simple_tree_data <- function(T, K=5, p=10, noise_std=1.0, split=1.676, signal_strength=1.0, seed=NULL, noise_form='normal') {
+simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676, signal_strength=1.0, seed=NULL, noise_form='normal') {
   # Generate covariates and potential outcomes of a synthetic dataset.
   
   stopifnot(p >= 2) # to check the input parameters satisfy certain conditions
@@ -233,23 +258,23 @@ simple_tree_data <- function(T, K=5, p=10, noise_std=1.0, split=1.676, signal_st
   
   set.seed(seed)
   # Generate experimental data
-  xs <- matrix(rnorm(T*p), ncol=p)
+  xs <- matrix(rnorm(A*p), ncol=p)
   
   r0 <- (xs[,1] < split) & (xs[,2] < split)
   r1 <- (xs[,1] < split) & (xs[,2] > split)
   r2 <- (xs[,1] > split) & (xs[,2] < split)
   r3 <- (xs[,1] > split) & (xs[,2] > split)
   
-  wxs <- matrix(0, nrow=T, ncol=K)
+  wxs <- matrix(0, nrow=A, ncol=K)
   wxs[r0,1] <- 1
   wxs[r1,2] <- 1
   wxs[r2,3] <- 1
   wxs[r3,4] <- 1
   muxs <- wxs * signal_strength
   if (noise_form == 'normal') {
-    ys <- muxs + matrix(rnorm(T*K, mean=0, sd=noise_std), ncol=K)
+    ys <- muxs + matrix(rnorm(A*K, mean=0, sd=noise_std), ncol=K)
   } else {
-    ys <- muxs + matrix(runif(T*K, min=-noise_std, max=noise_std), ncol=K)
+    ys <- muxs + matrix(runif(A*K, min=-noise_std, max=noise_std), ncol=K)
   }
   
   mvn <- mvtnorm::pmvnorm(lower=rep(-Inf,2), upper=c(split, split), mean=rep(0,2), corr=diag(2))
@@ -262,7 +287,7 @@ simple_tree_data <- function(T, K=5, p=10, noise_std=1.0, split=1.676, signal_st
   
   data <- list(xs=xs, ys=ys, muxs=muxs, wxs=wxs)
   
-  return(list(data, mus))
+  return(list(data = data, mus = mus))
 }
 
 # balwts: inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]

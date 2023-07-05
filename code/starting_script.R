@@ -8,8 +8,8 @@ cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2",
 source('adaptive_utils.R')
 
 # Read in data
-load('experiment_data_contextual.RData')
-load('experiment_data_noncontextual.RData')
+load('../data/experiment_data_contextual.RData')
+load('../data/experiment_data_noncontextual.RData')
 
 # saved hypothetical contextual probabilities 
 # contextual probabilities: A * A * K matrix for time, contexts, treatment arms
