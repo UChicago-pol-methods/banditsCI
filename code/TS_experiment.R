@@ -59,7 +59,7 @@ mu_hat <- calculate_mu_hat(results)
 balwts <- balwts(results$ws, results$probs)
 
 # Save results, mu_hat and balwts
-save(results, balwts, mu_hat, file="experiment_data_contextual.RData")
+save(results, balwts, mu_hat, file="../data/experiment_data_contextual.RData")
 
 # plot the cumulative assignment graph for every arm and every batch size, x-axis is the number of observations, y-axis is the cumulative assignment
 plot_cumulative_assignment(results, batch_sizes)
@@ -68,14 +68,14 @@ dev.copy(png, file="contextual_cumulative_assignment_plot.png", width=1138, heig
 
 
 # Non-contextual experiment
-results <- run_experiment(ys, floor_start, floor_decay, batch_sizes)
+results <- run_experiment(ys, floor_start, floor_decay, batch_sizes, xs = NULL)
 mu_hat <- calculate_mu_hat(results)
 
 # inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
 balwts <- balwts(results$ws, results$probs)
 
 # Save results, mu_hat and balwts
-save(results, balwts, mu_hat, file="experiment_data_noncontextual.RData")
+save(results, balwts, mu_hat, file="../data/experiment_data_noncontextual.RData")
 
 plot_cumulative_assignment(results, batch_sizes)
 dev.copy(png, file="noncontextual_cumulative_assignment_plot.png", width=1138, height=715)

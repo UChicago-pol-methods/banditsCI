@@ -42,3 +42,5 @@ code/experiment_data.RData
 code/cumulative_assignment_plot.png
 code/Rplot.png
 code/estimate_plot.png
+code/data/experiment_data_contextual.RData
+code/data/experiment_data_noncontextual.RData
