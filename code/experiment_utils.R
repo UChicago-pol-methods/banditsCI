@@ -125,7 +125,7 @@ draw_thompson <- function(
     ts_probs <- unname(table(factor(argmax, levels = 1:model$K)) / model$num_mc)
     ps <- impose_floor(ts_probs, floor)
     w <- sample(1:model$K, size = end - start + 1, prob = ps, replace = TRUE)
-    ps <- do.call(rbind, replicate(200, ps, simplify = FALSE))
+    ps <- do.call(rbind, replicate(end - start + 1, ps, simplify = FALSE))
   }
   
   return(list(w=w, ps=ps))
