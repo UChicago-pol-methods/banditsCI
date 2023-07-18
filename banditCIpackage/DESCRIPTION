@@ -10,6 +10,6 @@ LazyData: true
 RoxygenNote: 7.2.3
 Collate:
   'TS_experiment.R'
-  'starting_script.R'
   'experiment_utils.R'
   'adaptive_utils.R'
+  'starting_script.R'
