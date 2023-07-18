@@ -1,25 +1,25 @@
 library(reshape2) # to load melt function
 library(ggplot2)
 # color blind friendly palette
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", 
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2",
                "#D55E00", "#CC79A7")
 
 # Functions
-source('adaptive_utils.R')
+source('R/adaptive_utils.R')
 
 # Read in data
 load('../data/experiment_data_contextual.RData')
 load('../data/experiment_data_noncontextual.RData')
 
-# saved hypothetical contextual probabilities 
+# saved hypothetical contextual probabilities
 # contextual probabilities: A * A * K matrix for time, contexts, treatment arms
 contextual_probs <- results$probs
 
 # calculate AIPW scores with aw_scores function
 aipw_scoresR_learn <- aw_scores(
-  ws = results$ws, 
-  yobs = results$yobs, 
-  mu_hat = mu_hat, 
+  ws = results$ws,
+  yobs = results$yobs,
+  mu_hat = mu_hat,
   K = ncol(results$ys),
   balwts = balwts)
 
@@ -42,12 +42,12 @@ policy1 <- lapply(1:K, function(x) {
   pol_mat[,x] <- 1
   pol_mat
 }
-) 
+)
 
-## estimating the value Q(w) of a single arm w. Here we estimate all the arms in policy1 in turn. 
+## estimating the value Q(w) of a single arm w. Here we estimate all the arms in policy1 in turn.
 out_full <- output_estimates(
-  policy1 = policy1, 
-  gammahat = aipw_scoresR_learn, 
+  policy1 = policy1,
+  gammahat = aipw_scoresR_learn,
   contextual_probs = contextual_probs)
 
 # Get estimates for treatment effects of policies as contrast to control \delta(w_1, w_2) = E[Y_t(w_1) - Y_t(w_2)]. In Hadad, Vitor, et al (2021) there are two approaches.
@@ -57,7 +57,7 @@ out_full_te1 <- output_estimates(
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = 'combined',
-  gammahat = aipw_scoresR_learn, 
+  gammahat = aipw_scoresR_learn,
   contextual_probs = contextual_probs)
 
 ## The second approach takes asymptotically normal inference about \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
@@ -82,7 +82,7 @@ n_arms <- n_arms+1
 combinedMatrix$arm <- rep(paste0("arm", 2:n_arms), each = n_reps)
 
 # Add a method column
-values <- c("uniform", "non_contextual_minvar", "contextual_minvar", 
+values <- c("uniform", "non_contextual_minvar", "contextual_minvar",
             "non_contextual_stablevar", "contextual_stablevar", "non_contextual_twopoint")
 combinedMatrix$method <- rep(values, length.out = nrow(combinedMatrix))
 
@@ -90,7 +90,7 @@ combinedMatrix$method <- rep(values, length.out = nrow(combinedMatrix))
 # Create the plot
 plot <- ggplot(combinedMatrix, aes(x = estimate, y = method)) +
   geom_point(aes(x = estimate), size = 2, position = position_dodge(width=0.5)) +
-  geom_errorbar(aes(xmin = estimate - 1.96*std.error, xmax = estimate + 1.96*std.error), width = 0.05, 
+  geom_errorbar(aes(xmin = estimate - 1.96*std.error, xmax = estimate + 1.96*std.error), width = 0.05,
                 position = position_dodge(width=0.5)) +
   xlab("Coefficient Estimate") +
   ylab("weights") +
