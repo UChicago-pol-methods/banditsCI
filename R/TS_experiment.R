@@ -1,6 +1,6 @@
 # Run Thompson Experiment
 
-source('R/experiment_utils.R')
+source('experiment_utils.R')
 
 # Set parameters
 floor_start <- 5
