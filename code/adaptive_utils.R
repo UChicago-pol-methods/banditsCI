@@ -122,7 +122,7 @@ output_estimates <- function(policy0 = NULL,
   # policy1: list of A * K counterfactual treatment policy matrices for evaluation, with assignment probabilities under each policy 
   # contrasts: define the approach to estimate treatment effects. 'combined' indicates the first approach -- the difference in AIPW scores as the unbiased scoring rule for \delta (w_1, w_2); 'separate' indicates the second approach -- \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
   # gammahat: scores matrix
-  # contextual_probs: A * A * K matrix for contextual probabilities, with dimensions representing, time, contexts, treatment arms #TODO allow non-contextual running of the code
+  # contextual_probs: A * A * K matrix for contextual probabilities, with dimensions representing time, contexts, treatment arms 
   # uniform: logical, estimate uniform weights
   # non_contextual_minvar: logical, estimate non-contextual minvar weights
   # contextual_minvar: logical, estimate contextual minvar weights

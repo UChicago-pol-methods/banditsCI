@@ -72,7 +72,7 @@ update_thompson <- function(
       } else{
         X <- cbind(1, model$X[[w]])
         yhat <- predict(regr, s = 'lambda.1se', model$X[[w]])
-        model$mu[w,] <- coef[, drop = TRUE] # intercept and coefficients of predictors
+        model$mu[w,] <- coef[, ] # intercept and coefficients of predictors
         B <- t(X) %*% X + regr$lambda.1se * diag(model$p + 1) 
         model$V[w,,] <- array(mean((model$y[[w]] - yhat)^2) * solve(B))
       }
@@ -125,6 +125,7 @@ draw_thompson <- function(
     ts_probs <- unname(table(factor(argmax, levels = 1:model$K)) / model$num_mc)
     ps <- impose_floor(ts_probs, floor)
     w <- sample(1:model$K, size = end - start + 1, prob = ps, replace = TRUE)
+    ps <- do.call(rbind, replicate(end - start + 1, ps, simplify = FALSE))
   }
   
   return(list(w=w, ps=ps))
@@ -190,7 +191,8 @@ run_experiment <- function(
     ps <- draw$ps
     yobs[ff:l] <- ys[cbind(ff:l, w)]
     ws[ff:l] <- w
-    probs[ff:l, , ] <- array(replicate(A, ps), dim = c(l-ff+1, A, K))
+    probs[ff:l, , ] <- aperm(sapply(ff:l, function(x) ps, simplify = "array"), 
+                             c(3,1,2))
     
     if(!is.null(xs)){ # contextual case
       bandit_model <- update_thompson(ws = ws[ff:l], 
