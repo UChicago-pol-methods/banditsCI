@@ -1,6 +1,6 @@
 # Run Thompson Experiment
 
-source('experiment_utils.R')
+source('R/experiment_utils.R')
 
 # Set parameters
 floor_start <- 5
@@ -35,7 +35,7 @@ mu_hat <- calculate_mu_hat(results)
 balwts <- balwts(results$ws, results$probs)
 
 # Save results, mu_hat and balwts
-save(results, balwts, mu_hat, file="../data/experiment_data_contextual.RData")
+save(results, balwts, mu_hat, file="data/experiment_data_contextual.RData")
 
 # plot the cumulative assignment graph for every arm and every batch size, x-axis is the number of observations, y-axis is the cumulative assignment
 plot_cumulative_assignment(results, batch_sizes)
@@ -51,7 +51,7 @@ mu_hat <- calculate_mu_hat(results)
 balwts <- balwts(results$ws, results$probs)
 
 # Save results, mu_hat and balwts
-save(results, balwts, mu_hat, file="../data/experiment_data_noncontextual.RData")
+save(results, balwts, mu_hat, file="data/experiment_data_noncontextual.RData")
 
 plot_cumulative_assignment(results, batch_sizes)
 dev.copy(png, file="noncontextual_cumulative_assignment_plot.png", width=1138, height=715)
