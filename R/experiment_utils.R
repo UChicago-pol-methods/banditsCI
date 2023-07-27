@@ -75,7 +75,7 @@ update_thompson <- function(
       model$ps[[w]] <- c(model$ps[[w]], ps[cbind(ws == w,w)])
       regr <- cv.glmnet(model$X[[w]], model$y[[w]], alpha = 0)
       coef <- coef(regr, s = 'lambda.1se')
-
+      
       if(isTRUE(balanced)){
         W <- 1/model$ps[[w]] # balancing weights
         X <- model$X[[w]]
@@ -86,28 +86,28 @@ update_thompson <- function(
         mean_x <- colMeans(X)
         sd_x <- sqrt(apply(X,2,var)*(n-1)/n)
         X_scaled <- matrix(NA, nrow = n, ncol = p)
-
+        
         for(i in 1:p){
           X_scaled[,i] <- (X[,i] - mean_x[i])/sd_x[i]
         }
         X_scaled[is.na(X_scaled)] <- 0
-
+        
         X_scaled_ones <- cbind(rep(1,n), X_scaled)
-
+        
         B <- t(X_scaled_ones) %*% diag(W) %*% X_scaled_ones + regr$lambda.1se/sd_y*n * diag(x = c(0, rep(1,p)))
         coefhat <- solve(B) %*% t(X_scaled_ones) %*% diag(W) %*% Y
         coefhat_rescaled <- replace(coefhat[-1]/sd_x, sd_x==0, 0)
         coefhat <- c(coefhat[1] - crossprod(mean_x, coefhat_rescaled),
                      coefhat_rescaled)
-
+        
         model$mu[w,] <- coefhat
         yhat <- cbind(1, X) %*% coefhat
-
+        
         model$V[w,,] <- array(mean((model$y[[w]] - yhat)^2* W) * solve(B))
       } else{
         X <- cbind(1, model$X[[w]])
         yhat <- predict(regr, s = 'lambda.1se', model$X[[w]])
-        model$mu[w,] <- coef[, drop = TRUE] # intercept and coefficients of predictors
+        model$mu[w,] <- coef[,] # intercept and coefficients of predictors
         B <- t(X) %*% X + regr$lambda.1se * diag(model$p + 1)
         model$V[w,,] <- array(mean((model$y[[w]] - yhat)^2) * solve(B))
       }
@@ -141,26 +141,26 @@ draw_thompson <- function(
     xs = NULL
 ) {
   floor <- model$floor_start / (model$floor_decay * start)
-
+  
   if(!is.null(xs)){
     # Draws arms with a LinTS agent for the observed covariates.
     A <- dim(xs)[1]
     p <- dim(xs)[2]
     ps <- array(NA, dim=c(A, model$K))
-
+    
     xt <- cbind(rep(1, A), xs)
     coeff <- array(NA, dim=c(model$K, model$num_mc, p+1))
     for (w in 1:model$K) {
       coeff[w,,] <- mvrnorm(model$num_mc, model$mu[w,], model$V[w,,]) # random.multivariate_normal from different contexts
     }
     draws <- apply(coeff, c(1,2), function(x) {xt %*% x}) # double check this line
-
+    
     for (s in 1:nrow(ps)) { # TODO and double check that draws is doing the right thing here
       ps[s, ] <- table(factor(apply(draws[s, , ], 2, which.max), levels = 1:model$K) ) / model$num_mc
       ps[s, ] <- impose_floor(ps[s, ], floor)
     }
     w <- sapply(1:(end - start + 1), function(t) sample(1:model$K, size=1, prob=ps[start + t - 1, ]))
-
+    
   } else {
     # Draws arms with a non-contextual TS agent.
     if( all( unique(unlist(model$y)) %in% c(0,1)) ){ # bernoulli sampling
@@ -177,7 +177,7 @@ draw_thompson <- function(
     ps <- impose_floor(ts_probs, floor)
     w <- sample(1:model$K, size = end - start + 1, prob = ps, replace = TRUE)
   }
-
+  
   return(list(w=w, ps=ps))
 }
 
@@ -219,25 +219,25 @@ run_experiment <- function(
   K <- dim(ys)[2] # K: the number of arms
   ws <- numeric(A) # the index of the selected arm. The ws array is a 1-dimensional array.
   yobs <- numeric(A)
-
-
+  
+  
   probs <- array(0, dim = c(A, A, K))
   Probs_t <- matrix(0, A, K)
   p <- dim(xs)[2]
-
+  
   bandit_model <- LinTSModel(p = p,
                              K = K,
                              floor_start = floor_start,
                              floor_decay = floor_decay,
                              is_contextual = !is.null(xs)
   )
-
+  
   # uniform sampling at the first batch
   batch_size_cumsum <- cumsum(batch_sizes) #
   ws[1:batch_size_cumsum[1]] <- sample(1:K, batch_size_cumsum[1], replace = TRUE) # TODO: make complete RA
   yobs[1:batch_size_cumsum[1]] <- ys[cbind(1:batch_size_cumsum[1], ws[1:batch_size_cumsum[1]])]
   probs[1:batch_size_cumsum[1], , ] <- array(1/K, dim = c(batch_size_cumsum[1], A, K))
-
+  
   if(!is.null(xs)){ # contextual case
     bandit_model <- update_thompson(ws = ws[1:batch_size_cumsum[1]],
                                     yobs = yobs[1:batch_size_cumsum[1]],
@@ -250,8 +250,8 @@ run_experiment <- function(
                                     yobs = yobs[1:batch_size_cumsum[1]],
                                     model = bandit_model)
   }
-
-
+  
+  
   # adaptive sampling at the subsequent batches
   for (idx in 1:(length(batch_sizes)-1)) {
     ff <- batch_size_cumsum[idx] + 1
@@ -261,8 +261,11 @@ run_experiment <- function(
     ps <- draw$ps
     yobs[ff:l] <- ys[cbind(ff:l, w)]
     ws[ff:l] <- w
-    probs[ff:l, , ] <- array(replicate(A, ps), dim = c(l-ff+1, A, K))
-
+    probs[ff:l, , ] <- aperm(
+      array(matrix(ps, nrow = A, ncol = K, byrow = is.null(xs)), 
+            dim = dim(probs[ff:l, , ])[c(2,3,1)]), 
+      c(3,1,2))
+    
     if(!is.null(xs)){ # contextual case
       bandit_model <- update_thompson(ws = ws[ff:l],
                                       yobs = yobs[ff:l],
@@ -278,9 +281,9 @@ run_experiment <- function(
   }
   # probs are assignment probabilities e_t(X_s, w) of shape [A, A, K]
   if(is.null(xs)){ bandit_model <- NULL }
-
+  
   data <- list(yobs = yobs, ws = ws, xs = xs, ys = ys, probs = probs, fitted_bandit_model = bandit_model)
-
+  
   return(data)
 }
 
@@ -332,7 +335,7 @@ generate_bandit_data <- function(X=NULL,
                                  noise_std=1.0,
                                  signal_strength=1.0) {
   # Generate covariates and potential outcomes from a classification dataset.
-
+  
   shuffler <- sample(1:nrow(X))
   xs <- X[shuffler,]
   ys <- y[shuffler]
@@ -343,7 +346,7 @@ generate_bandit_data <- function(X=NULL,
   K <- length(unique(ys))
   muxs <- matrix(0, nrow=A, ncol=K)
   for (k in 1:K) {
-    muxs[,k] <- as.integer(ys == unique(ys)[k]) * signal_strength
+    muxs[,k] <- as.integer(ys == k) * signal_strength
   }
   ys <- muxs + rnorm(n=A*K, mean=0, sd=noise_std)
   mus <- table(y) / A
@@ -351,9 +354,9 @@ generate_bandit_data <- function(X=NULL,
   return(list(data = data, mus = mus))
 }
 
-#' balwts Function
+#' calculate_balwts Function
 #'
-#' The balwts function calculates the inverse probability score of pulling arms, given the actions taken and the true probabilities of each arm being chosen.
+#' The calculate_balwts function calculates the inverse probability score of pulling arms, given the actions taken and the true probabilities of each arm being chosen.
 #'
 #' @param ws a vector of length A containing the actions taken at each time step
 #' @param probs a matrix of shape [A, K] or [A, A, K] containing the true probabilities of each arm being chosen at each time step
@@ -368,7 +371,7 @@ generate_bandit_data <- function(X=NULL,
 #' balwts <- balwts(ws, probs)
 #'
 #' @export
-balwts <- function(ws, probs) {
+calculate_balwts <- function(ws, probs) {
   A <- length(ws)
   if (length(dim(probs)) == 2) {
     K <- dim(probs)[2]
@@ -443,13 +446,13 @@ plot_cumulative_assignment <- function(
   # - batch_sizes: batch sizes used in the experiment
   # OUTPUT:
   # - plot of cumulative assignment graph
-
+  
   # access dataset components
   ws <- results$ws
   A <- length(ws)
   K <- dim(results$probs)[length(dim(results$probs))]
   batch_size_cumsum <- cumsum(batch_sizes)
-
+  
   dat <- matrix(0, nrow = A, ncol = K)
   dat[cbind(1:A, ws)] <- 1
   dat <- apply(dat, 2, cumsum)

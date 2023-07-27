@@ -210,7 +210,7 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #' @param policy1 list of A * K counterfactual treatment policy matrices for evaluation, with assignment probabilities under each policy.
 #' @param contrasts Define the approach to estimate treatment effects. 'combined' indicates the first approach -- the difference in AIPW scores as the unbiased scoring rule for \delta (w_1, w_2); 'separate' indicates the second approach -- \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2).
 #' @param gammahat Scores matrix.
-#' @param contextual_probs A * A * K matrix for contextual probabilities, with dimensions representing, time, contexts, treatment arms. #TODO allow non-contextual running of the code.
+#' @param contextual_probs A * A * K matrix for contextual probabilities, with dimensions representing time, contexts, treatment arms. 
 #' @param uniform Logical, estimate uniform weights.
 #' @param non_contextual_minvar Logical, estimate non-contextual minvar weights.
 #' @param contextual_minvar Logical, estimate contextual minvar weights.

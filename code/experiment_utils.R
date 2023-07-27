@@ -125,7 +125,6 @@ draw_thompson <- function(
     ts_probs <- unname(table(factor(argmax, levels = 1:model$K)) / model$num_mc)
     ps <- impose_floor(ts_probs, floor)
     w <- sample(1:model$K, size = end - start + 1, prob = ps, replace = TRUE)
-    ps <- do.call(rbind, replicate(end - start + 1, ps, simplify = FALSE))
   }
   
   return(list(w=w, ps=ps))
@@ -191,8 +190,11 @@ run_experiment <- function(
     ps <- draw$ps
     yobs[ff:l] <- ys[cbind(ff:l, w)]
     ws[ff:l] <- w
-    probs[ff:l, , ] <- aperm(sapply(ff:l, function(x) ps, simplify = "array"), 
-                             c(3,1,2))
+    
+    probs[ff:l, , ] <- aperm(
+      array(matrix(ps, nrow = A, ncol = K, byrow = is.null(xs)), 
+            dim = dim(probs[ff:l, , ])[c(2,3,1)]), 
+      c(3,1,2))
     
     if(!is.null(xs)){ # contextual case
       bandit_model <- update_thompson(ws = ws[ff:l], 
@@ -243,7 +245,7 @@ generate_bandit_data <- function(X=NULL,
   K <- length(unique(ys))
   muxs <- matrix(0, nrow=A, ncol=K)
   for (k in 1:K) {
-    muxs[,k] <- as.integer(ys == unique(ys)[k]) * signal_strength
+    muxs[,k] <- as.integer(ys == k) * signal_strength
   }
   ys <- muxs + rnorm(n=A*K, mean=0, sd=noise_std)
   mus <- table(y) / A
@@ -251,8 +253,49 @@ generate_bandit_data <- function(X=NULL,
   return(list(data = data, mus = mus))
 }
 
-# balwts: inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
-balwts <- function(ws, probs) {
+simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676, signal_strength=1.0, seed=NULL, noise_form='normal') {
+  # Generate covariates and potential outcomes of a synthetic dataset.
+  
+  stopifnot(p >= 2) # to check the input parameters satisfy certain conditions
+  stopifnot(K >= 4)
+  stopifnot(split >= 0)
+  
+  set.seed(seed)
+  # Generate experimental data
+  xs <- matrix(rnorm(A*p), ncol=p)
+  
+  r0 <- (xs[,1] < split) & (xs[,2] < split)
+  r1 <- (xs[,1] < split) & (xs[,2] > split)
+  r2 <- (xs[,1] > split) & (xs[,2] < split)
+  r3 <- (xs[,1] > split) & (xs[,2] > split)
+  
+  wxs <- matrix(0, nrow=A, ncol=K)
+  wxs[r0,1] <- 1
+  wxs[r1,2] <- 1
+  wxs[r2,3] <- 1
+  wxs[r3,4] <- 1
+  muxs <- wxs * signal_strength
+  if (noise_form == 'normal') {
+    ys <- muxs + matrix(rnorm(A*K, mean=0, sd=noise_std), ncol=K)
+  } else {
+    ys <- muxs + matrix(runif(A*K, min=-noise_std, max=noise_std), ncol=K)
+  }
+  
+  mvn <- mvtnorm::pmvnorm(upper=c(split, split), mean=rep(0,2), corr=diag(2))
+  mus <- rep(0, K)
+  mus[1] <- mvn
+  mus[2] <- mvtnorm::pmvnorm(lower=c(-Inf, split), upper=c(split, Inf), mean=rep(0,2), corr=diag(2))
+  mus[3] <- mvtnorm::pmvnorm(lower=c(split, -Inf), upper=c(Inf, split), mean=rep(0,2), corr=diag(2))
+  mus[4] <- mvtnorm::pmvnorm(lower=c(-Inf, -Inf), upper=c(-split, -split), mean=rep(0,2), corr=diag(2))
+  mus <- mus * signal_strength
+  
+  data <- list(xs=xs, ys=ys, muxs=muxs, wxs=wxs)
+  
+  return(list(data = data, mus = mus))
+}
+
+# calculate_balwts: inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
+calculate_balwts <- function(ws, probs) {
   A <- length(ws)
   if (length(dim(probs)) == 2) {
     K <- dim(probs)[2]
