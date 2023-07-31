@@ -3,10 +3,10 @@
 source('experiment_utils.R')
 
 # Set parameters ----
-# To generate a dataset with 1000 observations, 5 covariates, and 4 arms
+# To generate a dataset with 500 observations, 5 covariates, and 4 arms
 floor_start <- 5
 floor_decay <- 0.9
-batch_sizes <- c(1e3, 500, 500, 500)
+batch_sizes <- c(100, 100, 100, 100, 100)
 A <- sum(batch_sizes)
 p <- 5
 K <- 4
