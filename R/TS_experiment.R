@@ -1,6 +1,6 @@
 # Run Thompson Experiment
 
-source('experiment_utils.R')
+source('R/experiment_utils.R')
 
 # Set parameters ----
 # To generate a dataset with 1000 observations, 5 covariates, and 4 arms
@@ -22,7 +22,7 @@ X <- matrix(rnorm(A*p), ncol=p) # - X: covariates of shape [A, p]
 # generate a linear model
 coef <- c(rnorm(2), rnorm(ncol(X)-2, sd = 0.05))
 y_latent <- X %*% coef
-y <- as.numeric(cut(rank(y_latent), 
+y <- as.numeric(cut(rank(y_latent),
                     # one group is twice as large as other groups
                     breaks = c(0, A*(2:(K+1)/(K+1))) ))
 data <- generate_bandit_data(X = X, y = y, noise = 0)
@@ -32,8 +32,8 @@ data <- generate_bandit_data(X = X, y = y, noise = 0)
 # data <- simple_tree_data(
 #   A=A,
 #   K=K,
-#   p=p, 
-#   split = 0.6, 
+#   p=p,
+#   split = 0.6,
 #   noise_std = 0.5)
 
 # Contextual experiment ----
@@ -49,7 +49,7 @@ mu_hat <- calculate_mu_hat(results)
 balwts <- calculate_balwts(results$ws, results$probs)
 
 # Save results, mu_hat and balwts
-save(results, balwts, mu_hat, file="../data/experiment_data_contextual.RData")
+save(results, balwts, mu_hat, file="data/experiment_data_contextual.RData")
 
 # plot the cumulative assignment graph for every arm and every batch size, x-axis is the number of observations, y-axis is the cumulative assignment
 plot_cumulative_assignment(results, batch_sizes)
@@ -64,7 +64,7 @@ results <- run_experiment(ys, floor_start, floor_decay, batch_sizes, xs = NULL)
 balwts <- calculate_balwts(results$ws, results$probs)
 
 # Save results, mu_hat and balwts
-save(results, balwts, file="../data/experiment_data_noncontextual.RData")
+save(results, balwts, file="data/experiment_data_noncontextual.RData")
 
 plot_cumulative_assignment(results, batch_sizes)
 dev.copy(png, file="noncontextual_cumulative_assignment_plot.png", width=1138, height=715)

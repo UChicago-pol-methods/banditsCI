@@ -1,5 +1,5 @@
-Package: my_package
-Title: My package title
+Package: banditCI
+Title: banditCI
 Version: 0.1.0
 Author: First Last <email@example.com>
 Maintainer: First Last <email@example.com>
