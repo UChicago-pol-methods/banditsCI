@@ -1,5 +1,3 @@
-library(Matrix)
-
 #' LinTSModel Function
 #'
 #' The LinTSModel function creates a linear Thompson Sampling model for multi-armed bandit problems.
@@ -72,7 +70,7 @@ update_thompson <- function(
       model$y[[w]] <- rbind(model$y[[w]], cbind(yobs[ws == w, drop = FALSE]))
       model$ps[[w]] <- c(model$ps[[w]], ps[cbind(ws == w,w)])
       regr <- glmnet::cv.glmnet(model$X[[w]], model$y[[w]], alpha = 0)
-      coef <- glmnet::coef(regr, s = 'lambda.1se')
+      coef <- glmnet::coef.glmnet(regr, s = 'lambda.1se')
 
       if(isTRUE(balanced)){
         W <- 1/model$ps[[w]] # balancing weights
@@ -104,7 +102,7 @@ update_thompson <- function(
         model$V[w,,] <- array(mean((model$y[[w]] - yhat)^2* W) * solve(B))
       } else{
         X <- cbind(1, model$X[[w]])
-        yhat <- glmnet::predict(regr, s = 'lambda.1se', model$X[[w]])
+        yhat <- glmnet::predict.glmnet(regr, s = 'lambda.1se', model$X[[w]])
         model$mu[w,] <- coef[,] # intercept and coefficients of predictors
         B <- t(X) %*% X + regr$lambda.1se * diag(model$p + 1)
         model$V[w,,] <- array(mean((model$y[[w]] - yhat)^2) * solve(B))

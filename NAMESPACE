@@ -1,5 +1,5 @@
 exportPattern("^[[:alpha:]]+")
 importFrom(glmnet, cv.glmnet)
-importFrom(glmnet, coef)
-importFrom(glmnet, predict)
+importFrom(glmnet, coef.glmnet)
+importFrom(glmnet, predict.glmnet)
 importFrom(MASS, mvrnorm)
