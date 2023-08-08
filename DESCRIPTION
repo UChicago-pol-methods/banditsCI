@@ -8,6 +8,13 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.2.3
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Imports:
+    glmnet (>= 4.1-6),
+    Matrix (>= 1.4-1),
+    MASS (>= 7.3-56)
 Collate:
   'TS_experiment.R'
   'experiment_utils.R'
