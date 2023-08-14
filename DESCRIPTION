@@ -14,7 +14,6 @@ Suggests:
 Config/testthat/edition: 3
 Imports:
     glmnet (>= 4.1-6),
-    Matrix (>= 1.4-1),
     MASS (>= 7.3-56),
     mvtnorm (>= 1.2-2)
 Collate:
