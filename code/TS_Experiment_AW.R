@@ -71,11 +71,12 @@ table(sums_to_one) # should be all true
 # For loop iterates each time and makes sure no treatment assignment probabilities are below probability floor
 floor_check <- rep(NA, data[[1]]$A) #what to input in this first slot
 
-probability_floor <- (floor_start / (floor_decay * i)) # Probability floor equation
 
 # Iterate results$probs to check for values less than calculated probability floors
-for (i in 1:data[[1]]$A){
-
+for (i in (batch_sizes[1] + 1):data[[1]]$A){
+  # check what batch i is in
+  batch_start <- c(0, cumsum(batch_sizes))[max(which(c(0, cumsum(batch_sizes)) <i))] +1
+  probability_floor <- (floor_start / (floor_decay * batch_start)) # Probability floor equation
   floor_check[i] <- any(results$probs[i, ,] < probability_floor)
 }
 floor_check
