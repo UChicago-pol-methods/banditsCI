@@ -62,7 +62,7 @@ update_thompson <- function(
     model,
     xs = NULL,
     ps = NULL,
-    balanced = FALSE
+    balanced = NULL
 ) {
   for (w in 1:model$K) {
     if (!is.null(xs)) { # contextual
@@ -78,9 +78,9 @@ update_thompson <- function(
         Y <- model$y[[w]]
         n <- length(Y)
         p <- ncol(X)
-        sd_y <- sqrt(var(Y)*(n-1)/n)[1,1]
+        sd_y <- sqrt(stats::var(Y)*(n-1)/n)[1,1]
         mean_x <- colMeans(X)
-        sd_x <- sqrt(apply(X,2,var)*(n-1)/n)
+        sd_x <- sqrt(apply(X,2,stats::var)*(n-1)/n)
         X_scaled <- matrix(NA, nrow = n, ncol = p)
 
         for(i in 1:p){
@@ -102,7 +102,7 @@ update_thompson <- function(
         model$V[w,,] <- array(mean((model$y[[w]] - yhat)^2* W) * solve(B))
       } else{
         X <- cbind(1, model$X[[w]])
-        yhat <- glmnet::predict.glmnet(regr, s = 'lambda.1se', model$X[[w]])
+        yhat <- stats::predict(regr, s = 'lambda.1se', model$X[[w]])
         model$mu[w,] <- coef[,] # intercept and coefficients of predictors
         B <- t(X) %*% X + regr$lambda.1se * diag(model$p + 1)
         model$V[w,,] <- array(mean((model$y[[w]] - yhat)^2) * solve(B))
@@ -162,11 +162,11 @@ draw_thompson <- function(
     if( all( unique(unlist(model$y)) %in% c(0,1)) ){ # bernoulli sampling
       successes <- unlist(lapply(model$y, function(x) sum(x)))
       failures <- unlist(lapply(model$y, function(x) length(x) - sum(x)))
-      draws <- replicate(model$num_mc, rbeta(model$K, successes + 1, failures + 1)) # + 1 is prior
+      draws <- replicate(model$num_mc, stats::rbeta(model$K, successes + 1, failures + 1)) # + 1 is prior
     } else { # normal approximation sampling
       muhats <- unlist(lapply(model$y, mean))
-      sigmahats <- unlist(lapply(model$y, function(x) sd(x)/sqrt(length(x))))
-      draws <- replicate(model$num_mc, rnorm(model$K, mean = muhats, sd = sigmahats))
+      sigmahats <- unlist(lapply(model$y, function(x) stats::sd(x)/sqrt(length(x))))
+      draws <- replicate(model$num_mc, stats::rnorm(model$K, mean = muhats, sd = sigmahats))
     }
     argmax <- apply(draws, 2, which.max)
     ts_probs <- unname(table(factor(argmax, levels = 1:model$K)) / model$num_mc)
@@ -343,9 +343,50 @@ generate_bandit_data <- function(X=NULL,
   for (k in 1:K) {
     muxs[,k] <- as.integer(ys == k) * signal_strength
   }
-  ys <- muxs + rnorm(n=A*K, mean=0, sd=noise_std)
+  ys <- muxs + stats::rnorm(n=A*K, mean=0, sd=noise_std)
   mus <- table(y) / A
   data <- list(xs=xs, ys=ys, muxs=muxs, A=A, p=ncol(xs), K=K)
+  return(list(data = data, mus = mus))
+}
+
+simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676, signal_strength=1.0, seed=NULL, noise_form='normal') {
+  # Generate covariates and potential outcomes of a synthetic dataset.
+
+  stopifnot(p >= 2) # to check the input parameters satisfy certain conditions
+  stopifnot(K >= 4)
+  stopifnot(split >= 0)
+
+  set.seed(seed)
+  # Generate experimental data
+  xs <- matrix(stats::rnorm(A*p), ncol=p)
+
+  r0 <- (xs[,1] < split) & (xs[,2] < split)
+  r1 <- (xs[,1] < split) & (xs[,2] > split)
+  r2 <- (xs[,1] > split) & (xs[,2] < split)
+  r3 <- (xs[,1] > split) & (xs[,2] > split)
+
+  wxs <- matrix(0, nrow=A, ncol=K)
+  wxs[r0,1] <- 1
+  wxs[r1,2] <- 1
+  wxs[r2,3] <- 1
+  wxs[r3,4] <- 1
+  muxs <- wxs * signal_strength
+  if (noise_form == 'normal') {
+    ys <- muxs + matrix(stats::rnorm(A*K, mean=0, sd=noise_std), ncol=K)
+  } else {
+    ys <- muxs + matrix(stats::runif(A*K, min=-noise_std, max=noise_std), ncol=K)
+  }
+
+  mvn <- mvtnorm::pmvnorm(upper=c(split, split), mean=rep(0,2), corr=diag(2))
+  mus <- rep(0, K)
+  mus[1] <- mvn
+  mus[2] <- mvtnorm::pmvnorm(lower=c(-Inf, split), upper=c(split, Inf), mean=rep(0,2), corr=diag(2))
+  mus[3] <- mvtnorm::pmvnorm(lower=c(split, -Inf), upper=c(Inf, split), mean=rep(0,2), corr=diag(2))
+  mus[4] <- mvtnorm::pmvnorm(lower=c(-Inf, -Inf), upper=c(-split, -split), mean=rep(0,2), corr=diag(2))
+  mus <- mus * signal_strength
+
+  data <- list(xs=xs, ys=ys, muxs=muxs, wxs=wxs)
+
   return(list(data = data, mus = mus))
 }
 
@@ -363,7 +404,7 @@ generate_bandit_data <- function(X=NULL,
 #' K <- 3
 #' ws <- sample(1:K, A, replace = TRUE)
 #' probs <- matrix(runif(A * K), nrow = A, ncol = K)
-#' balwts <- balwts(ws, probs)
+#' balwts <- calculate_balwts(ws, probs)
 #'
 #' @export
 calculate_balwts <- function(ws, probs) {
@@ -393,21 +434,26 @@ calculate_balwts <- function(ws, probs) {
 #' @return A vector containing the estimated expected value of the reward for each arm
 #'
 #' @examples
-#' A <- 5
-#' K <- 3
-#' xs <- matrix(runif(A * K), nrow = A, ncol = K)
+#' A <- 200
+#' K <- p <- 3
+#' xs <- matrix(runif(A * p), nrow = A, ncol = p)
 #' ys <- matrix(rbinom(A * K, 1, 0.5), nrow = A, ncol = K)
-#' model <- bandit_lin_ucb(xs, ys)
-#' results <- model$fit()
+#' batch_sizes <- c(100,100)
+#' results <- run_experiment(ys = ys, floor_start = 5, floor_decay = 0.9, batch_sizes = batch_sizes, xs = xs)
 #' mu_hat <- calculate_mu_hat(results)
 #'
 #' @export
 calculate_mu_hat <- function(results) {
   if (!is.null(results$fitted_bandit_model)) {
     # Contextual Thompson Sampling
-    mu_transpose <- t(results$fitted_bandit_model$mu)
-    xs_1 <- cbind(1, results$xs)
-    mu_hat <- xs_1 %*% mu_transpose
+    A <- length(results$yobs)
+    K <- results$fitted_bandit_model$K
+    mu_hat <- matrix(NA, nrow = A, ncol = K)
+    X <- results$xs
+    for(w in 1:results$fitted_bandit_model$K){
+      coefhat <- results$fitted_bandit_model$mu[w,]
+      mu_hat[,w] <- cbind(1, X) %*% coefhat
+    }
     return(mu_hat)
   }
 }
@@ -451,8 +497,8 @@ plot_cumulative_assignment <- function(
   dat <- matrix(0, nrow = A, ncol = K)
   dat[cbind(1:A, ws)] <- 1
   dat <- apply(dat, 2, cumsum)
-  matplot(dat, type = c("l"), col =1:K)
-  abline(v=batch_size_cumsum, col="#00ccff")
-  legend("topleft", legend = 1:K, col=1:K, lty=1:K)
+  graphics::matplot(dat, type = c("l"), col =1:K)
+  graphics::abline(v=batch_size_cumsum, col="#00ccff")
+  graphics::legend("topleft", legend = 1:K, col=1:K, lty=1:K)
 }
 

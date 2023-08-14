@@ -16,12 +16,12 @@ A vector containing the estimated expected value of the reward for each arm
 The calculate_mu_hat function calculates the estimated expected value of the reward for each arm, given the results of a bandit model.
 }
 \examples{
-A <- 5
-K <- 3
-xs <- matrix(runif(A * K), nrow = A, ncol = K)
+A <- 200
+K <- p <- 3
+xs <- matrix(runif(A * p), nrow = A, ncol = p)
 ys <- matrix(rbinom(A * K, 1, 0.5), nrow = A, ncol = K)
-model <- bandit_lin_ucb(xs, ys)
-results <- model$fit()
+batch_sizes <- c(100,100)
+results <- run_experiment(ys = ys, floor_start = 5, floor_decay = 0.9, batch_sizes = batch_sizes, xs = xs)
 mu_hat <- calculate_mu_hat(results)
 
 }

@@ -4,7 +4,7 @@
 \alias{update_thompson}
 \title{update_thompson Function}
 \usage{
-update_thompson(ws, yobs, model, xs = NULL, ps = NULL, balanced = FALSE)
+update_thompson(ws, yobs, model, xs = NULL, ps = NULL, balanced = NULL)
 }
 \arguments{
 \item{ws}{a vector of integers indicating which arm was chosen for each observation}

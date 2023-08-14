@@ -206,11 +206,11 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #'
 #' This function calculates treatment effect estimates using augmented inverse probability weighting (AIPW) with various weighting schemes. The function estimates the value of a single arm or treatment effects of policies as compared to the control, using the difference in AIPW scores as the unbiased scoring rule or the difference in means between two policies. The function provides estimates under various weighting schemes, including uniform, non-contextual minvar, contextual minvar, non-contextual stablevar, contextual stablevar, and non-contextual two-point. The function is based on the algorithm developed in Zhan et al. (2021).
 #'
-#' @param policy0 A * K control policy matrix for contrast evaluation, with probabilities under control. When policy0 = NULL, the function is estimating the value Q(w) of a single arm w. When policy0 doesn't equal to NULL, the function is estimating treatment effects of policies as compared to control \delta(w_1, w_2), using the difference in AIPW scores as the unbiased scoring rule for \delta (w_1, w_2).
+#' @param policy0 A * K control policy matrix for contrast evaluation, with probabilities under control. When `policy0 = NULL`, the function is estimating the value \eqn{Q(w)} of a single arm w. When `policy0` doesn't equal to `NULL`, the function is estimating treatment effects of policies as compared to control \eqn{\Delta(w_1, w_2)}, using the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}.
 #' @param policy1 list of A * K counterfactual treatment policy matrices for evaluation, with assignment probabilities under each policy.
-#' @param contrasts Define the approach to estimate treatment effects. 'combined' indicates the first approach -- the difference in AIPW scores as the unbiased scoring rule for \delta (w_1, w_2); 'separate' indicates the second approach -- \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2).
+#' @param contrasts Define the approach to estimate treatment effects. `combined` indicates the first approach -- the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}; `separate` indicates the second approach -- \eqn{\hat \Delta (w_1, w_2) = \hat Q (w_1) - \hat Q (w_2)}.
 #' @param gammahat Scores matrix.
-#' @param contextual_probs A * A * K matrix for contextual probabilities, with dimensions representing time, contexts, treatment arms. 
+#' @param contextual_probs A * A * K matrix for contextual probabilities, with dimensions representing time, contexts, treatment arms.
 #' @param uniform Logical, estimate uniform weights.
 #' @param non_contextual_minvar Logical, estimate non-contextual minvar weights.
 #' @param contextual_minvar Logical, estimate contextual minvar weights.
@@ -225,8 +225,8 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #' data <- generate_data()
 #' # Estimate treatment effects using AIPW with various weighting schemes
 #' estimates <- output_estimates(policy1 = data$policy1,
-#' gammahat = data$gammahat,
-#' contextual_probs = data$contextual_probs)
+#'                               gammahat = data$gammahat,
+#'                               contextual_probs = data$contextual_probs)
 output_estimates <- function(policy0 = NULL,
                              policy1,
                              contrasts = 'combined',
@@ -239,10 +239,10 @@ output_estimates <- function(policy0 = NULL,
                              contextual_stablevar = TRUE,
                              non_contextual_twopoint = TRUE){
   # policy0: A * K control policy matrix for contrast evaluation, with probabilities under control
-  ## when policy0 = NULL, the function is estimating the value Q(w) of a single arm w
-  ## when policy0 doesn't equal to NULL, the function is estimating treatment effects of policies as compared to control \delta(w_1, w_2), using the difference in AIPW scores as the unbiased scoring rule for \delta (w_1, w_2)
+  ## when policy0 = NULL, the function is estimating the value \eqn{Q(w)} of a single arm w
+  ## when policy0 doesn't equal to NULL, the function is estimating treatment effects of policies as compared to control \eqn{\Delta(w_1, w_2)}, using the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}
   # policy1: list of A * K counterfactual treatment policy matrices for evaluation, with assignment probabilities under each policy
-  # contrasts: define the approach to estimate treatment effects. 'combined' indicates the first approach -- the difference in AIPW scores as the unbiased scoring rule for \delta (w_1, w_2); 'separate' indicates the second approach -- \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
+  # contrasts: define the approach to estimate treatment effects. 'combined' indicates the first approach -- the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}; 'separate' indicates the second approach -- \eqn{\hat\Delta (w_1, w_2) = \hat Q  (w_1) - \hat Q (w_2)}
   # gammahat: scores matrix
   # contextual_probs: A * A * K matrix for contextual probabilities, with dimensions representing, time, contexts, treatment arms #TODO allow non-contextual running of the code
   # uniform: logical, estimate uniform weights
@@ -252,7 +252,7 @@ output_estimates <- function(policy0 = NULL,
   # contextual_stablevar: logical, estimate contextual stablevar weights
 
   if(contrasts == 'combined'){
-    # Now we are using the first approach: use the difference in AIPW scores as the unbiased scoring rule for \delta (w_1, w_2)
+    # Now we are using the first approach: use the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}
     if (length(dim(contextual_probs))==2){
       z <- array(0,dim=c(nrow(contextual_probs), nrow(contextual_probs), ncol(contextual_probs)))
       for(j in 1:nrow(contextual_probs)){
@@ -355,7 +355,7 @@ output_estimates <- function(policy0 = NULL,
     }
     return(results)
 
-    # The second approach takes asymptotically normal inference about \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
+    # The second approach takes asymptotically normal inference about \eqn{\Delta(w_1, w_2)}: \eqn{\hat\Delta (w_1, w_2) = \hat Q (w_1) - \hat Q (w_2)}
   } else if (contrasts == 'separate'){
     out_full0 <- out_full[[1]]
     out_full1 <- out_full

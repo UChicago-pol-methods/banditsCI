@@ -19,15 +19,15 @@ output_estimates(
 )
 }
 \arguments{
-\item{policy0}{A * K control policy matrix for contrast evaluation, with probabilities under control. When policy0 = NULL, the function is estimating the value Q(w) of a single arm w. When policy0 doesn't equal to NULL, the function is estimating treatment effects of policies as compared to control \delta(w_1, w_2), using the difference in AIPW scores as the unbiased scoring rule for \delta (w_1, w_2).}
+\item{policy0}{A * K control policy matrix for contrast evaluation, with probabilities under control. When `policy0 = NULL`, the function is estimating the value \eqn{Q(w)} of a single arm w. When `policy0` doesn't equal to `NULL`, the function is estimating treatment effects of policies as compared to control \eqn{\Delta(w_1, w_2)}, using the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}.}
 
 \item{policy1}{list of A * K counterfactual treatment policy matrices for evaluation, with assignment probabilities under each policy.}
 
-\item{contrasts}{Define the approach to estimate treatment effects. 'combined' indicates the first approach -- the difference in AIPW scores as the unbiased scoring rule for \delta (w_1, w_2); 'separate' indicates the second approach -- \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2).}
+\item{contrasts}{Define the approach to estimate treatment effects. `combined` indicates the first approach -- the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}; `separate` indicates the second approach -- \eqn{\hat \Delta (w_1, w_2) = \hat Q (w_1) - \hat Q (w_2)}.}
 
 \item{gammahat}{Scores matrix.}
 
-\item{contextual_probs}{A * A * K matrix for contextual probabilities, with dimensions representing, time, contexts, treatment arms. #TODO allow non-contextual running of the code.}
+\item{contextual_probs}{A * A * K matrix for contextual probabilities, with dimensions representing time, contexts, treatment arms.}
 
 \item{uniform}{Logical, estimate uniform weights.}
 
@@ -50,6 +50,6 @@ This function calculates treatment effect estimates using augmented inverse prob
 data <- generate_data()
 # Estimate treatment effects using AIPW with various weighting schemes
 estimates <- output_estimates(policy1 = data$policy1,
-gammahat = data$gammahat,
-contextual_probs = data$contextual_probs)
+                              gammahat = data$gammahat,
+                              contextual_probs = data$contextual_probs)
 }
