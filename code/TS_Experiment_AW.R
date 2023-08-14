@@ -12,19 +12,24 @@
 
 # Validation: Probabilities will be the same from each batch start to end value, but probabilities will different at each respective batch start.
 
-batch_splits <- sort(c(cumsum(batch_sizes), c(1, cumsum(batch_sizes) +1) )) # New variable that includes the start and end indexes for batches
-batch_splits <- batch_splits[batch_splits != max(batch_splits)] # Removal max
+for(i in 1:A){
+  batch_splits <- sort(c(cumsum(batch_sizes), c(1, cumsum(batch_sizes) +1) )) # New variable that includes the start and end indexes for batches
+  batch_splits <- batch_splits[batch_splits != max(batch_splits)] # Removal max
 
-batch_size_check <- results$probs[batch_splits,300,] # Choose correct subset
-batch_size_check <- as.data.frame(batch_size_check) #make the indexed data a data frame
+  batch_size_check <- results$probs[batch_splits, i,] # Choose correct subset
+  batch_size_check <- as.data.frame(batch_size_check) #make the indexed data a data frame
 
-batch_size_column <- paste0("Batch ", rep(1:(length(batch_splits)/2), each = 2) , c(' Start ', ' End '), '(', batch_splits, ')' )
-batch_size_check <- cbind(Batches = batch_size_column, batch_size_check)
+  batch_size_column <- paste0("Batch ", rep(1:(length(batch_splits)/2), each = 2) , c(' Start ', ' End '), '(', batch_splits, ')' )
+  batch_size_check <- cbind(Batches = batch_size_column, batch_size_check)
 
-bsc_column_Names <- c("Batches (Time Value)", "Treatment 1", "Treatment 2", "Treatment 3", "Treatment 4")
-colnames(batch_size_check) <- bsc_column_Names
+  bsc_column_Names <- c("Batches (Time Value)", "Treatment 1", "Treatment 2", "Treatment 3", "Treatment 4")
+  colnames(batch_size_check) <- bsc_column_Names
 
-batch_size_check
+  batch_size_check
+  # perform some function on batch_size check
+  # save results
+}
+
 
 # To view dataframe
 View(batch_size_check)
@@ -50,9 +55,10 @@ sums_to_one <- rep(NA, data[[1]]$A) # Create empty vector with as many elements 
 for(i in 1:data[[1]]$A){
   # Save the summed probabilities across treatments for each context conditional
   # On time
-  sums_to_one[i] <- table(rowSums(results$probs[i,,])) # Iterate data and make a table to correct rounding
+  sums_to_one[i] <- (names(table(rowSums(results$probs[i,,])))[1] == '1' &
+                       table(rowSums(results$probs[i,,])) == data[[1]]$A) # Iterate data and make a table to correct rounding
 }
-sums_to_one
+table(sums_to_one)
 
 
 
