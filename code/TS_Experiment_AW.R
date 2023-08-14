@@ -12,13 +12,13 @@
 
 # Validation: Probabilities will be the same from each batch start to end value, but probabilities will different at each respective batch start.
 
-batch_splits <- sort(c(cumsum(batch_sizes), cumsum(batch_sizes) +1)) # New variable that includes the start and end indexes for batches
-batch_splits <- batch_splits[batch_splits != 501] # Removal of value 501
+batch_splits <- sort(c(cumsum(batch_sizes), c(1, cumsum(batch_sizes) +1) )) # New variable that includes the start and end indexes for batches
+batch_splits <- batch_splits[batch_splits != max(batch_splits)] # Removal max
 
 batch_size_check <- results$probs[batch_splits,300,] # Choose correct subset
 batch_size_check <- as.data.frame(batch_size_check) #make the indexed data a data frame
 
-batch_size_column <- c("Batch 1 End (100)", "Batch 2 Start (101)", "Batch 2 End (200)", "Batch 3 Start (201)", "Batch 3 End (300)", "Batch 4 Start (301)", "Batch 4 End (400)", "Batch 5 Start (401)", "Batch 5 End (500)")
+batch_size_column <- paste0("Batch ", rep(1:(length(batch_splits)/2), each = 2) , c(' Start ', ' End '), '(', batch_splits, ')' )
 batch_size_check <- cbind(Batches = batch_size_column, batch_size_check)
 
 bsc_column_Names <- c("Batches (Time Value)", "Treatment 1", "Treatment 2", "Treatment 3", "Treatment 4")
