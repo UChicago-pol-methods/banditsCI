@@ -55,10 +55,11 @@ sums_to_one <- rep(NA, data[[1]]$A) # Create empty vector with as many elements 
 for(i in 1:data[[1]]$A){
   # Save the summed probabilities across treatments for each context conditional
   # On time
-  sums_to_one[i] <- (names(table(rowSums(results$probs[i,,])))[1] == '1' &
+  sums_to_one[i] <- (names(table(rowSums(results$probs[i,,])))[1] == '1' & # first component of table is '1'
+                      # AND the number of observations in that category is equal to A
                        table(rowSums(results$probs[i,,])) == data[[1]]$A) # Iterate data and make a table to correct rounding
 }
-table(sums_to_one)
+table(sums_to_one) # should be all true
 
 
 
