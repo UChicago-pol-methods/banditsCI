@@ -35,6 +35,7 @@ LinTSModel <- function(K,
     model$V <- array(0, dim=c(K, p+1, p+1))
     model$X <- replicate(K, matrix(0, nrow=0, ncol=p))
   }
+  model$is_contextual <- is_contextual
   return(model)
 }
 

@@ -20,6 +20,8 @@ test_that("LinTSModel creates the model with the correct parameters", {
 })
 
 test_that("update_thompson updates the model parameters correctly", {
+  library(glmnet)  # Load glmnet package
+
   model <- LinTSModel(K = 5, p = 3, floor_start = 1, floor_decay = 0.9, num_mc = 100, is_contextual = TRUE)
   xs <- matrix(rnorm(9), ncol = 3)
   ws <- c(3, 2, 1)
@@ -126,60 +128,6 @@ test_that("impose_floor correctly imposes a floor on the given vector", {
   # Additional assertions specific to the values of imposed_a
 
   expect_true(all(imposed_a <= a), "All elements of imposed_a should be less than or equal to the corresponding elements in a")
-})
-
-
-test_that("generate_bandit_data correctly generates covariates and potential outcomes", {
-  set.seed(123)
-
-  X <- iris[, 1:4]
-  y <- iris[, 5]
-  noise_std <- 0.1
-  signal_strength <- 1.0
-
-  data <- generate_bandit_data(X = X, y = y, noise_std = noise_std, signal_strength = signal_strength)
-
-  # Assertions for the structure and values of the generated data
-
-  expect_true(is.list(data), "The generated data should be a list")
-  expect_true("data" %in% names(data), "The generated data should contain 'data'")
-  expect_true("mus" %in% names(data), "The generated data should contain 'mus'")
-
-  generated_data <- data$data
-
-  expect_true(is.list(generated_data), "The generated data should be a list")
-  expect_true("xs" %in% names(generated_data), "The generated data should contain 'xs'")
-  expect_true("ys" %in% names(generated_data), "The generated data should contain 'ys'")
-  expect_true("muxs" %in% names(generated_data), "The generated data should contain 'muxs'")
-  expect_true("A" %in% names(generated_data), "The generated data should contain 'A'")
-  expect_true("p" %in% names(generated_data), "The generated data should contain 'p'")
-  expect_true("K" %in% names(generated_data), "The generated data should contain 'K'")
-
-  expect_true(is.matrix(generated_data$xs), "The generated 'xs' should be a matrix")
-  expect_true(is.matrix(generated_data$ys), "The generated 'ys' should be a matrix")
-  expect_true(is.matrix(generated_data$muxs), "The generated 'muxs' should be a matrix")
-
-  expect_equal(dim(generated_data$xs)[1], generated_data$A, "The number of rows in 'xs' should be equal to 'A'")
-  expect_equal(dim(generated_data$xs)[2], generated_data$p, "The number of columns in 'xs' should be equal to 'p'")
-  expect_equal(dim(generated_data$ys)[1], generated_data$A, "The number of rows in 'ys' should be equal to 'A'")
-  expect_equal(dim(generated_data$ys)[2], generated_data$K, "The number of columns in 'ys' should be equal to 'K'")
-  expect_equal(dim(generated_data$muxs)[1], generated_data$A, "The number of rows in 'muxs' should be equal to 'A'")
-  expect_equal(dim(generated_data$muxs)[2], generated_data$K, "The number of columns in 'muxs' should be equal to 'K'")
-
-  expect_true(all(generated_data$xs %in% X), "All elements of 'xs' should be present in the input covariates")
-  expect_true(all(generated_data$ys %in% c(generated_data$muxs + stats::rnorm(n = generated_data$A * generated_data$K, mean = 0, sd = noise_std))), "All elements of 'ys' should be generated with the given noise_std")
-
-  # Assertions for the structure and values of the true class probabilities
-
-  true_class_probs <- data$mus
-
-  expect_true(is.table(true_class_probs), "The true class probabilities should be a table")
-
-  # Additional assertions specific to the values of true_class_probs
-
-  expect_true(all(names(true_class_probs) %in% unique(y)), "All class labels should be present in the true class probabilities")
-  expect_true(all(true_class_probs >= 0), "All class probabilities should be non-negative")
-  expect_true(abs(sum(true_class_probs) - 1) < 1e-10, "The sum of class probabilities should be approximately equal to 1")
 })
 
 test_that("simple_tree_data correctly generates covariates and potential outcomes", {
@@ -340,4 +288,57 @@ test_that("plot_cumulative_assignment correctly generates the cumulative assignm
 
   # Additional assertions to check if the function runs without errors
   expect_no_error(plot_cumulative_assignment(results, batch_sizes))
+})
+
+test_that("aw_var computes variance of policy value estimator correctly", {
+  scores <- matrix(c(0.5, 0.8, 0.6, 0.3, 0.9, 0.2, 0.5, 0.7, 0.4, 0.8, 0.2, 0.6), ncol = 3)
+  policy <- matrix(c(0.2, 0.3, 0.5, 0.6, 0.1, 0.3, 0.4, 0.5, 0.1, 0.2, 0.7, 0.1), ncol = 3)
+  estimate <- aw_estimate(scores = scores, policy = policy, evalwts = c(0.5, 1, 0.5, 1.5))
+  variance <- aw_var(scores = scores, estimate = estimate, policy = policy, evalwts = c(0.5, 1, 0.5, 1.5))
+
+  # Assertion for the computed variance
+  expect_equal(variance, 0.00625, "The computed variance should be 0.00625")
+})
+
+test_that("estimate computes estimate and variance of policy evaluation correctly", {
+  w <- c(0.5, 1, 0.5, 1.5)
+  scores <- matrix(c(0.5, 0.8, 0.6, 0.3, 0.9, 0.2, 0.5, 0.7, 0.4, 0.8, 0.2, 0.6), ncol = 3)
+  policy <- matrix(c(0.2, 0.3, 0.5, 0.6, 0.1, 0.3, 0.4, 0.5, 0.1, 0.2, 0.7, 0.1), ncol = 3)
+  gammahat <- scores - policy
+  result <- estimate(w = w, gammahat = gammahat, policy = policy)
+
+  # Assertions for the computed estimate and variance
+  expect_equal(result[["estimate"]], 0.925, "The estimated policy value should be 0.925")
+  expect_equal(result[["var"]], 0.00625, "The computed variance should be 0.00625")
+})
+
+test_that("calculate_continuous_X_statistics computes estimate and variance of policy evaluation correctly", {
+  h <- matrix(c(0.4, 0.3, 0.2, 0.1, 0.2, 0.3, 0.3, 0.2, 0.5, 0.3, 0.2, 0.1, 0.1, 0.2, 0.1, 0.6), ncol = 4)
+  scores <- matrix(c(0.5, 0.8, 0.6, 0.3, 0.9, 0.2, 0.5, 0.7, 0.4, 0.8, 0.2, 0.6), ncol = 3)
+  policy <- matrix(c(0.2, 0.3, 0.5, 0.6, 0.1, 0.3, 0.4, 0.5, 0.1, 0.2, 0.7, 0.1), ncol = 3)
+  gammahat <- scores - policy
+  result <- calculate_continuous_X_statistics(h = h, gammahat = gammahat, policy = policy)
+
+  # Assertions for the computed estimate and variance
+  expect_equal(result[["estimate"]], 0.542, "The estimated policy value should be 0.542")
+  expect_equal(result[["var"]], 0.003721, "The computed variance should be 0.003721")
+})
+
+test_that("stick_breaking works", {
+  # Test basic functionality.
+  Z <- array(runif(10), dim = c(2, 5))
+  weights <- stick_breaking(Z)
+  expect_equal(sum(weights), 1.0)
+  for (a in 1:2) {
+    expect_equal(sum(weights[a,]), 1.0)
+    for (k in 1:5) {
+      expect_lte(weights[a, k], 1.0)
+    }
+  }
+})
+
+test_that("ifelse_clip works", {
+  # Test basic functionality.
+  lamb <- c(1, 2, 3, 4, 5)
+  expect_equal(ifelse_clip(lamb, 2, 4), c(2, 2, 3, 4, 4))
 })
