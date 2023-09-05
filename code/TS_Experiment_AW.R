@@ -53,7 +53,9 @@ for (col in bsc_column_Names[2:5]) {
   cat("\n")
 }
 
-# For loop code to check eevry context
+
+
+# For loop code to check evry context
 
 # iterate every context and check that batch start and end are equivalent
 batch_size_check_list <- list()
@@ -86,7 +88,7 @@ print(batch_size_check_list)
 
 library(knitr)
 
-# Create an empty data frame to store the results
+# Empty data frame to store results and be called
 results_df <- data.frame(
   Column = character(),
   Result = logical()
@@ -96,11 +98,11 @@ for (batch_size_check in batch_size_check_list) {
   num_rows <- nrow(batch_size_check)
 
   for (col in bsc_column_Names[2:5]) {
-    all_pairs_equal <- TRUE  # Initialize a variable to track if all pairs are equal
+    all_pairs_equal <- TRUE
 
     for (i in seq(1, num_rows, by = 2)) {
       if (!identical(batch_size_check[i, col], batch_size_check[i + 1, col])) {
-        all_pairs_equal <- FALSE  # Set to FALSE if any pair is not equal
+        all_pairs_equal <- FALSE
       }
     }
 
@@ -110,6 +112,7 @@ for (batch_size_check in batch_size_check_list) {
 }
 results_df
 
+# results_df[1:2000,2]
 
 
 ##### In the first batch, are all assignment probabilities uniform? Is this the case across all contexts?
