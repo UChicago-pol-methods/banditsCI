@@ -12,7 +12,54 @@
 
 # Validation: Probabilities will be the same from each batch start to end value, but probabilities will different at each respective batch start.
 
-for(i in 1:A){
+# Random generated context batch size code
+batch_splits <- sort(c(cumsum(batch_sizes), c(1, cumsum(batch_sizes) +1) )) # New variable that includes the start and end indexes for batches
+batch_splits <- batch_splits[batch_splits != max(batch_splits)] # Removal max
+
+sample_value <- sample(1:data[[1]]$A, size =1) # Random assigned context value
+
+batch_size_check <- results$probs[batch_splits, sample_value, ] # Choose correct subset
+batch_size_check <- as.data.frame(batch_size_check) #make the indexed data a data frame
+
+batch_size_column <- paste0("Batch ", rep(1:(length(batch_splits)/2), each = 2) , c(' Start ', ' End '), '(', batch_splits, ')' )
+batch_size_check <- cbind(Batches = batch_size_column, batch_size_check)
+
+bsc_column_Names <- c("Batches (Time Value)", "Treatment_1", "Treatment_2", "Treatment_3", "Treatment_4")
+colnames(batch_size_check) <- bsc_column_Names
+
+batch_size_check
+# perform some function on batch_size check
+# save results
+
+print(sample_value)
+
+# To view data frame
+# View(batch_size_check)
+
+# Checks
+num_rows <- nrow(batch_size_check)
+
+
+for (col in bsc_column_Names[2:5]) {
+  cat("Checking column:", col, "\n")
+
+  for (i in seq(1, num_rows, by = 2)) {
+    if (identical(batch_size_check[i, col], batch_size_check[i + 1, col])) {
+      cat("Rows", i, "and", i + 1, "in column", col, "are equal\n")
+    } else {
+      cat("Rows", i, "and", i + 1, "in column", col, "are not equal\n")
+    }
+  }
+  cat("\n")
+}
+
+# For loop code to check eevry context
+
+# iterate every context and check that batch start and end are equivalent
+batch_size_check_list <- list()
+
+for(i in 1:data[[1]]$A){
+
   batch_splits <- sort(c(cumsum(batch_sizes), c(1, cumsum(batch_sizes) +1) )) # New variable that includes the start and end indexes for batches
   batch_splits <- batch_splits[batch_splits != max(batch_splits)] # Removal max
 
@@ -22,17 +69,46 @@ for(i in 1:A){
   batch_size_column <- paste0("Batch ", rep(1:(length(batch_splits)/2), each = 2) , c(' Start ', ' End '), '(', batch_splits, ')' )
   batch_size_check <- cbind(Batches = batch_size_column, batch_size_check)
 
-  bsc_column_Names <- c("Batches (Time Value)", "Treatment 1", "Treatment 2", "Treatment 3", "Treatment 4")
+  bsc_column_Names <- c("Batches (Time Value)", "Treatment_1", "Treatment_2", "Treatment_3", "Treatment_4")
   colnames(batch_size_check) <- bsc_column_Names
 
-  batch_size_check
+  batch_size_check_list[[i]] <- batch_size_check
   # perform some function on batch_size check
   # save results
 }
 
+print(batch_size_check_list)
 
-# To view dataframe
-View(batch_size_check)
+# To call a specific context batch
+#batch_size_check_list[[i]]
+
+#Check that all start and end values in batches are equivalent
+
+library(knitr)
+
+# Create an empty data frame to store the results
+results_df <- data.frame(
+  Column = character(),
+  Result = logical()
+)
+
+for (batch_size_check in batch_size_check_list) {
+  num_rows <- nrow(batch_size_check)
+
+  for (col in bsc_column_Names[2:5]) {
+    all_pairs_equal <- TRUE  # Initialize a variable to track if all pairs are equal
+
+    for (i in seq(1, num_rows, by = 2)) {
+      if (!identical(batch_size_check[i, col], batch_size_check[i + 1, col])) {
+        all_pairs_equal <- FALSE  # Set to FALSE if any pair is not equal
+      }
+    }
+
+    # Store the result in the data frame
+    results_df <- rbind(results_df, data.frame(Column = col, Result = all_pairs_equal))
+  }
+}
+results_df
 
 
 
@@ -40,14 +116,17 @@ View(batch_size_check)
 
 # Validation: All probabilities for time 100 for all contexts (A = 500) for all treatments (K = 4) that equal 1/data[[1]]$K will be equivalent to 100 * data[[1]]$A * data[[1]]$K
 
-# This code indexes the first batch of results$probs and makes sure that all values are equal to 0.25
-sum(results$probs[1:batch_sizes[1],,] == 1/data[[1]]$K) # 1/data[[1]]$K is 1/4 = 0.25
+# This code indexes the first batch of results$probs and makes sure that all values are equal to 1/data[[1]]$K
+first_batch_check <- sum(results$probs[1:batch_sizes[1],,] == 1/data[[1]]$K) # 1/data[[1]]$K is 1/4 = 0.25
+first_batch_check
+
+first_batch_check == 100 * data[[1]]$A * data[[1]]$K
 
 
 
 ##### Conditional on a context and time period do assignment probabilities always sum to one
 
-# Validation: For every value of time (data[[1]]$A = 500) a value of data[[1]]$A * data[[1]]$K (context * Treatment) will be output
+# Validation: For every value of time (data[[1]]$A = 500) a value of data[[1]]$A * data[[1]]$K/4 (context * Treatment probabilities summed to one) will be output
 
 sums_to_one <- rep(NA, data[[1]]$A) # Create empty vector with as many elements as observations in the experiment
 
@@ -59,7 +138,10 @@ for(i in 1:data[[1]]$A){
                       # AND the number of observations in that category is equal to A
                        table(rowSums(results$probs[i,,])) == data[[1]]$A) # Iterate data and make a table to correct rounding
 }
-table(sums_to_one) # should be all true
+table(sums_to_one) # Calculates how many values sum to one, signified by TRUE
+
+# Checking that sums_to_one value is equal to all assignment probabilities summing to one
+sum(sums_to_one) == data[[1]]$A * data[[1]]$K/4
 
 
 
@@ -71,9 +153,9 @@ table(sums_to_one) # should be all true
 # For loop iterates each time and makes sure no treatment assignment probabilities are below probability floor
 floor_check <- rep(NA, data[[1]]$A) #what to input in this first slot
 
-
 # Iterate results$probs to check for values less than calculated probability floors
-for (i in (batch_sizes[1] + 1):data[[1]]$A){
+for (i in (batch_sizes[1] + 1):data[[1]]$A) # Values 101 through 500
+{
   # check what batch i is in
   batch_start <- c(0, cumsum(batch_sizes))[max(which(c(0, cumsum(batch_sizes)) <i))] +1
   probability_floor <- (floor_start / (floor_decay * batch_start)) # Probability floor equation
@@ -87,6 +169,8 @@ which(floor_check)
 # How many values where floor check is not being correctly implemented
 sum(which(floor_check))
 
+# Number of values where probability floor is correctly implemented
+sum(floor_check) == "FALSE"
 
 
 ##### From our data, we should know which treatment arm is best for every context.

@@ -1,3 +1,7 @@
+library(glmnet)
+library(Matrix)
+library(MASS)
+
 LinTSModel <- function(K,
                        p,
                        floor_start,
@@ -34,8 +38,8 @@ update_thompson <- function(
       model$X[[w]] <- rbind(model$X[[w]], cbind(xs[ws == w,,drop = FALSE]))
       model$y[[w]] <- rbind(model$y[[w]], cbind(yobs[ws == w, drop = FALSE]))
       model$ps[[w]] <- c(model$ps[[w]], ps[cbind(ws == w,w)])
-      regr <- glmnet::cv.glmnet(model$X[[w]], model$y[[w]], alpha = 0)
-      coef <- glmnet::coef.glmnet(regr, s = 'lambda.1se')
+      regr <- cv.glmnet(model$X[[w]], model$y[[w]], alpha = 0)
+      coef <- coef(regr, s = 'lambda.1se')
 
       if(isTRUE(balanced)){
         W <- 1/model$ps[[w]] # balancing weights
@@ -43,9 +47,9 @@ update_thompson <- function(
         Y <- model$y[[w]]
         n <- length(Y)
         p <- ncol(X)
-        sd_y <- sqrt(stats::var(Y)*(n-1)/n)[1,1]
+        sd_y <- sqrt(var(Y)*(n-1)/n)[1,1]
         mean_x <- colMeans(X)
-        sd_x <- sqrt(apply(X,2,stats::var)*(n-1)/n)
+        sd_x <- sqrt(apply(X,2,var)*(n-1)/n)
         X_scaled <- matrix(NA, nrow = n, ncol = p)
 
         for(i in 1:p){
@@ -96,7 +100,7 @@ draw_thompson <- function(
     xt <- cbind(rep(1, A), xs)
     coeff <- array(NA, dim=c(model$K, model$num_mc, p+1))
     for (w in 1:model$K) {
-      coeff[w,,] <- MASS::mvrnorm(model$num_mc, model$mu[w,], model$V[w,,]) # random.multivariate_normal from different contexts
+      coeff[w,,] <- mvrnorm(model$num_mc, model$mu[w,], model$V[w,,]) # random.multivariate_normal from different contexts
     }
     draws <- apply(coeff, c(1,2), function(x) {xt %*% x}) # double check this line
 
@@ -111,11 +115,11 @@ draw_thompson <- function(
     if( all( unique(unlist(model$y)) %in% c(0,1)) ){ # bernoulli sampling
       successes <- unlist(lapply(model$y, function(x) sum(x)))
       failures <- unlist(lapply(model$y, function(x) length(x) - sum(x)))
-      draws <- replicate(model$num_mc, stats::rbeta(model$K, successes + 1, failures + 1)) # + 1 is prior
+      draws <- replicate(model$num_mc, rbeta(model$K, successes + 1, failures + 1)) # + 1 is prior
     } else { # normal approximation sampling
       muhats <- unlist(lapply(model$y, mean))
-      sigmahats <- unlist(lapply(model$y, function(x) stats:sd(x)/sqrt(length(x))))
-      draws <- replicate(model$num_mc, stats::rnorm(model$K, mean = muhats, sd = sigmahats))
+      sigmahats <- unlist(lapply(model$y, function(x) sd(x)/sqrt(length(x))))
+      draws <- replicate(model$num_mc, rnorm(model$K, mean = muhats, sd = sigmahats))
     }
     argmax <- apply(draws, 2, which.max)
     ts_probs <- unname(table(factor(argmax, levels = 1:model$K)) / model$num_mc)
@@ -243,7 +247,7 @@ generate_bandit_data <- function(X=NULL,
   for (k in 1:K) {
     muxs[,k] <- as.integer(ys == k) * signal_strength
   }
-  ys <- muxs + stats::rnorm(n=A*K, mean=0, sd=noise_std)
+  ys <- muxs + rnorm(n=A*K, mean=0, sd=noise_std)
   mus <- table(y) / A
   data <- list(xs=xs, ys=ys, muxs=muxs, A=A, p=ncol(xs), K=K)
   return(list(data = data, mus = mus))
@@ -258,7 +262,7 @@ simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676, signal_st
 
   set.seed(seed)
   # Generate experimental data
-  xs <- matrix(stats::rnorm(A*p), ncol=p)
+  xs <- matrix(rnorm(A*p), ncol=p)
 
   r0 <- (xs[,1] < split) & (xs[,2] < split)
   r1 <- (xs[,1] < split) & (xs[,2] > split)
@@ -272,9 +276,9 @@ simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676, signal_st
   wxs[r3,4] <- 1
   muxs <- wxs * signal_strength
   if (noise_form == 'normal') {
-    ys <- muxs + matrix(stats::rnorm(A*K, mean=0, sd=noise_std), ncol=K)
+    ys <- muxs + matrix(rnorm(A*K, mean=0, sd=noise_std), ncol=K)
   } else {
-    ys <- muxs + matrix(stats::runif(A*K, min=-noise_std, max=noise_std), ncol=K)
+    ys <- muxs + matrix(runif(A*K, min=-noise_std, max=noise_std), ncol=K)
   }
 
   mvn <- mvtnorm::pmvnorm(upper=c(split, split), mean=rep(0,2), corr=diag(2))
@@ -340,8 +344,8 @@ plot_cumulative_assignment <- function(
   dat <- matrix(0, nrow = A, ncol = K)
   dat[cbind(1:A, ws)] <- 1
   dat <- apply(dat, 2, cumsum)
-  graphics::matplot(dat, type = c("l"), col =1:K)
-  graphics::abline(v=batch_size_cumsum, col="#00ccff")
-  graphics::legend("topleft", legend = 1:K, col=1:K, lty=1:K)
+  matplot(dat, type = c("l"), col =1:K)
+  abline(v=batch_size_cumsum, col="#00ccff")
+  legend("topleft", legend = 1:K, col=1:K, lty=1:K)
 }
 
