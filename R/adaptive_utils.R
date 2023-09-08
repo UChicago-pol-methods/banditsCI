@@ -398,8 +398,7 @@ output_estimates <- function(A,
       contextual_minvar = contextual_minvar,
       non_contextual_stablevar = non_contextual_stablevar,
       contextual_stablevar = contextual_stablevar,
-      non_contextual_twopoint = non_contextual_twopoint,
-      out_full = out_full
+      non_contextual_twopoint = non_contextual_twopoint
     )
 
     out_full_te2 <- lapply(out_full1, function(x){
