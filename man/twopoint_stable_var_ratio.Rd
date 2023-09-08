@@ -4,9 +4,11 @@
 \alias{twopoint_stable_var_ratio}
 \title{Calculate the allocation ratio for a two-point stable-variance bandit}
 \usage{
-twopoint_stable_var_ratio(e, alpha)
+twopoint_stable_var_ratio(A, e, alpha)
 }
 \arguments{
+\item{A}{the size of the experiment.}
+
 \item{e}{the empirical mean of the bad arm}
 
 \item{alpha}{the discount parameter}

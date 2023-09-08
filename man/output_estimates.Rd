@@ -38,6 +38,8 @@ output_estimates(
 \item{non_contextual_stablevar}{Logical, estimate non-contextual stablevar weights.}
 
 \item{contextual_stablevar}{Logical, estimate contextual stablevar weights.}
+
+\item{non_contextual_twopoint}{The non_contextual_twopoint parameter.}
 }
 \value{
 A list of treatment effect estimates under different weighting schemes.

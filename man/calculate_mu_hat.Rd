@@ -21,7 +21,11 @@ K <- p <- 3
 xs <- matrix(runif(A * p), nrow = A, ncol = p)
 ys <- matrix(rbinom(A * K, 1, 0.5), nrow = A, ncol = K)
 batch_sizes <- c(100,100)
-results <- run_experiment(ys = ys, floor_start = 5, floor_decay = 0.9, batch_sizes = batch_sizes, xs = xs)
+results <- run_experiment(ys = ys,
+                          floor_start = 5,
+                          floor_decay = 0.9,
+                          batch_sizes = batch_sizes,
+                          xs = xs)
 mu_hat <- calculate_mu_hat(results)
 
 }

@@ -103,7 +103,6 @@ policy1 <- lapply(1:K, function(x) {
 
 ## estimating the value Q(w) of a single arm w. Here we estimate all the arms in policy1 in turn. 
 out_full <- output_estimates(
-  A = A,
   policy1 = policy1, 
   gammahat = aipw_scoresR_learn, 
   contextual_probs = results$probs)
@@ -112,7 +111,6 @@ out_full <- output_estimates(
 ## The first approach: use the difference in AIPW scores as the unbiased scoring rule for \delta (w_1, w_2)
 ### The following function implements the first approach by subtracting policy0, the control arm, from all the arms in policy1, except for the control arm itself.
 out_full_te1 <- output_estimates(
-  A = A,
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = 'combined',
@@ -121,7 +119,6 @@ out_full_te1 <- output_estimates(
 
 ## The second approach takes asymptotically normal inference about \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
 out_full_te2 <- output_estimates(
-  A = A,
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = 'separate',
@@ -208,7 +205,6 @@ policy1 <- lapply(1:K, function(x) {
 
 ## estimating the value Q(w) of a single arm w. Here we estimate all the arms in policy1 in turn. 
 out_full <- output_estimates(
-  A = A,
   policy1 = policy1, 
   gammahat = aipw_scoresR_learn, 
   contextual_probs = probs)
@@ -217,7 +213,6 @@ out_full <- output_estimates(
 ## The first approach: use the difference in AIPW scores as the unbiased scoring rule for \delta (w_1, w_2)
 ### The following function implements the first approach by subtracting policy0, the control arm, from all the arms in policy1, except for the control arm itself.
 out_full_te1 <- output_estimates(
-  A = A,
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = 'combined',
@@ -226,7 +221,6 @@ out_full_te1 <- output_estimates(
 
 ## The second approach takes asymptotically normal inference about \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
 out_full_te2 <- output_estimates(
-  A = A,
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = 'separate',

@@ -214,7 +214,6 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #'
 #' This function calculates treatment effect estimates using augmented inverse probability weighting (AIPW) with various weighting schemes. The function estimates the value of a single arm or treatment effects of policies as compared to the control, using the difference in AIPW scores as the unbiased scoring rule or the difference in means between two policies. The function provides estimates under various weighting schemes, including uniform, non-contextual minvar, contextual minvar, non-contextual stablevar, contextual stablevar, and non-contextual two-point. The function is based on the algorithm developed in Zhan et al. (2021).
 #'
-#' @param A The value of A.
 #' @param policy0 A * K control policy matrix for contrast evaluation, with probabilities under control. When `policy0 = NULL`, the function is estimating the value \eqn{Q(w)} of a single arm w. When `policy0` doesn't equal to `NULL`, the function is estimating treatment effects of policies as compared to control \eqn{\Delta(w_1, w_2)}, using the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}.
 #' @param policy1 list of A * K counterfactual treatment policy matrices for evaluation, with assignment probabilities under each policy.
 #' @param contrasts Define the approach to estimate treatment effects. `combined` indicates the first approach -- the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}; `separate` indicates the second approach -- \eqn{\hat \Delta (w_1, w_2) = \hat Q (w_1) - \hat Q (w_2)}.
@@ -226,7 +225,6 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #' @param non_contextual_stablevar Logical, estimate non-contextual stablevar weights.
 #' @param contextual_stablevar Logical, estimate contextual stablevar weights.
 #' @param non_contextual_twopoint The non_contextual_twopoint parameter.
-#' @param out_full The out_full parameter.
 #'
 #' @return A list of treatment effect estimates under different weighting schemes.
 #' @export
@@ -238,8 +236,7 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #' estimates <- output_estimates(policy1 = data$policy1,
 #'                               gammahat = data$gammahat,
 #'                               contextual_probs = data$contextual_probs)
-output_estimates <- function(A,
-                             policy0 = NULL,
+output_estimates <- function(policy0 = NULL,
                              policy1,
                              contrasts = 'combined',
                              gammahat,
@@ -249,8 +246,7 @@ output_estimates <- function(A,
                              contextual_minvar = TRUE,
                              non_contextual_stablevar = TRUE,
                              contextual_stablevar = TRUE,
-                             non_contextual_twopoint = TRUE,
-                             out_full = NULL){
+                             non_contextual_twopoint = TRUE){
   # policy0: A * K control policy matrix for contrast evaluation, with probabilities under control
   ## when policy0 = NULL, the function is estimating the value \eqn{Q(w)} of a single arm w
   ## when policy0 doesn't equal to NULL, the function is estimating treatment effects of policies as compared to control \eqn{\Delta(w_1, w_2)}, using the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}
@@ -264,6 +260,9 @@ output_estimates <- function(A,
   # non_contextual_stablevar: logical, estimate non-contextual stablevar weights
   # contextual_stablevar: logical, estimate contextual stablevar weights
 
+  A <- nrow(gammahat)
+  K <- ncol(gammahat)
+  check_A(A)
   if(contrasts == 'combined' | is.null(policy0)){
     # Now we are using the first approach: use the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}
     if (length(dim(contextual_probs))==2){
@@ -292,7 +291,7 @@ output_estimates <- function(A,
     if(non_contextual_twopoint){
       e <- t(sapply(1:A, function(x) contextual_probs[x,x,]))
       twopoint_ratio <- twopoint_stable_var_ratio(A=A, e=e, alpha=0)
-      twopoint_h2es <- stick_breaking(A, K, twopoint_ratio)
+      twopoint_h2es <- stick_breaking(twopoint_ratio)
       wts_twopoint <- sqrt(ifelse_clip(twopoint_h2es * e, 0, twopoint_h2es * e))
     }
 
@@ -372,7 +371,6 @@ output_estimates <- function(A,
   } else if (contrasts == 'separate'){
     # control estimates
     out_full0 = output_estimates(
-      A = A,
       policy0 = NULL,
       policy1 = list(policy0),
       gammahat = gammahat,
@@ -382,13 +380,11 @@ output_estimates <- function(A,
       contextual_minvar = contextual_minvar,
       non_contextual_stablevar = non_contextual_stablevar,
       contextual_stablevar = contextual_stablevar,
-      non_contextual_twopoint = non_contextual_twopoint,
-      out_full = out_full
+      non_contextual_twopoint = non_contextual_twopoint
     )
 
     # treatment estimates
     out_full1 = output_estimates(
-      A = A,
       policy0 = NULL,
       policy1 = policy1,
       gammahat = gammahat,
@@ -425,13 +421,15 @@ output_estimates <- function(A,
 #'
 #' @export
 # Two-point allocation scheme
-stick_breaking <- function(A, K, Z){
+stick_breaking <- function(Z){
   # Stick breaking algorithm in stable-var weights calculation
   #
   # Input
   #   Z: input array of shape [A, K]
   # Output
   #   weights: stick_breaking weights of shape [A, K]
+  A <- dim(Z)[1]
+  K <- dim(Z)[2]
   weights <- array(0, dim = c(A, K))
   weight_sum <- rep(0, times = K)
   for (a in 1:A) {
@@ -465,6 +463,7 @@ ifelse_clip <- function(lamb, x, y) {
 #'
 #' This function calculates the allocation ratio for a two-point stable-variance bandit, given the empirical mean and the discount parameter alpha.
 #'
+#' @param A the size of the experiment.
 #' @param e the empirical mean of the bad arm
 #' @param alpha the discount parameter
 #' @return the allocation ratio lambda

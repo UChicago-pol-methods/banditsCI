@@ -23,8 +23,8 @@ test_that("aw_scores returns the expected AIPW scores", {
   }
 
   # Perform assertions to check the expected values
-  expected_scores <- balwts * yobs
-  expected_scores[cbind(1:A, ws)] <- scores[cbind(1:A, ws)]
+  expected_scores <- matrix(0, nrow = A, ncol = K)
+  expected_scores[cbind(1:A, ws)] <- (balwts * yobs)[cbind(1:A, ws)]
   expected_scores <- expected_scores + (1 - expand(balwts, ws, K)) * mu_hat
   expect_equal(dim(scores), dim(expected_scores))
   expect_equal(scores, expected_scores)
@@ -42,7 +42,8 @@ test_that("aw_scores returns the expected IPW scores when mu_hat is NULL", {
   scores <- aw_scores(yobs, ws, balwts, K)
 
   # Perform assertions to check the expected values (IPW scores)
-  expected_scores <- balwts * yobs
+  expected_scores <- matrix(0, nrow = A, ncol = K)
+  expected_scores[cbind(1:A, ws)] <- (balwts * yobs)[cbind(1:A, ws)]
   expect_equal(dim(scores), dim(expected_scores))
   expect_equal(scores, expected_scores)
 })

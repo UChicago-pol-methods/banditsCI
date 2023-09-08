@@ -36,6 +36,11 @@ The run_experiment function runs a LinTS or non-contextual TS bandit experiment,
 ys <- matrix(rbinom(1000, 1, 0.5), ncol=5)
 xs <- matrix(rnorm(300), ncol=3)
 batch_sizes <- c(100, 200, 700)
-result <- run_experiment(ys=ys, floor_start=1, floor_decay=0.9, batch_sizes=batch_sizes, xs=xs, balanced=TRUE)
+result <- run_experiment(ys=ys,
+                          floor_start=1,
+                          floor_decay=0.9,
+                          batch_sizes=batch_sizes,
+                          xs=xs,
+                          balanced=TRUE)
 
 }

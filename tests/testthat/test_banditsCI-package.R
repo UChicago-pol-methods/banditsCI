@@ -9,7 +9,7 @@ test_that("impose_floor correctly imposes a floor on the given vector", {
   # Assertions for the structure and values of the imposed_a
 
   expect_true(is.numeric(imposed_a), "The imposed_a should be a numeric vector")
-  expect_equal(length(imposed_a), length(a), "The length of imposed_a should be the same as the input vector")
+  expect_equal(length(imposed_a), length(a), info = "The length of imposed_a should be the same as the input vector")
 
   expect_true(all(imposed_a >= amin), "All elements of imposed_a should be greater than or equal to amin")
   expect_true(abs(sum(imposed_a) - 1) < 1e-10, "The sum of elements in imposed_a should be approximately equal to 1")
@@ -36,20 +36,20 @@ test_that("calculate_balwts correctly calculates the inverse probability scores"
   # Assertions for the structure and values of the inverse probability scores
 
   expect_true(is.matrix(balwts), "The inverse probability scores should be a matrix")
-  expect_equal(dim(balwts)[1], A, "The number of rows in the inverse probability scores should be equal to 'A'")
-  expect_equal(dim(balwts)[2], K, "The number of columns in the inverse probability scores should be equal to 'K'")
+  expect_equal(dim(balwts)[1], A, info = "The number of rows in the inverse probability scores should be equal to 'A'")
+  expect_equal(dim(balwts)[2], K, info = "The number of columns in the inverse probability scores should be equal to 'K'")
 
   if (length(dim(probs)) == 2) {
     for (a in 1:A) {
       if (ws[a] > K) {
-        expect_equal(balwts[a, ws[a]], 0, "The inverse probability score should be 0 if the action is out of range")
+        expect_equal(balwts[a, ws[a]], 0, info = "The inverse probability score should be 0 if the action is out of range")
       } else {
-        expect_equal(balwts[a, ws[a]], 1/probs[a, ws[a]], "The inverse probability score should be the reciprocal of the true probability")
+        expect_equal(balwts[a, ws[a]], 1/probs[a, ws[a]], info = "The inverse probability score should be the reciprocal of the true probability")
       }
     }
   } else {
     for (a in 1:A) {
-      expect_equal(balwts[a, ], 1/probs[a, a, ], "The inverse probability scores should be the reciprocal of the true probabilities")
+      expect_equal(balwts[a, ], 1/probs[a, a, ], info = "The inverse probability scores should be the reciprocal of the true probabilities")
     }
   }
 })

@@ -70,8 +70,20 @@ update_thompson <- function(
       model$X[[w]] <- rbind(model$X[[w]], cbind(xs[ws == w,,drop = FALSE]))
       model$y[[w]] <- rbind(model$y[[w]], cbind(yobs[ws == w, drop = FALSE]))
       model$ps[[w]] <- c(model$ps[[w]], ps[cbind(ws == w,w)])
-      regr <- glmnet::cv.glmnet(model$X[[w]], model$y[[w]], alpha = 0)
-      coef <- glmnet::coef.glmnet(regr, s = 'lambda.1se')
+      # if no variation in ys
+      if(length(unique(model$y[[w]])) == 1){
+        regr <- lm(model$y[[w]] ~ model$X[[w]])
+        regr$lambda.1se = 9999
+        coef <- matrix(c(unique(model$y[[w]]), rep(0, ncol(model$X[[w]]))),
+                       ncol = 1)
+      } else if(length(model$y[[w]])<10){ # no cross validation, use largest lambda
+        regr <- glmnet::glmnet(model$X[[w]], model$y[[w]], alpha = 0)
+        regr$lambda.1se <- regr$lambda[1]
+        coef <- glmnet::coef.glmnet(regr, s = regr$lambda[1])
+      } else {
+        regr <- glmnet::cv.glmnet(model$X[[w]], model$y[[w]], alpha = 0)
+        coef <- glmnet::coef.glmnet(regr, s = 'lambda.1se')
+      }
 
       if(isTRUE(balanced)){
         W <- 1/model$ps[[w]] # balancing weights
@@ -103,7 +115,11 @@ update_thompson <- function(
         model$V[w,,] <- array(mean((model$y[[w]] - yhat)^2* W) * solve(B))
       } else{
         X <- cbind(1, model$X[[w]])
-        yhat <- stats::predict(regr, s = 'lambda.1se', model$X[[w]])
+        if(length(unique(model$y[[w]])) == 1){
+          yhat <- stats::predict(regr, as.data.frame(model$X[[w]]))
+        }else{
+          yhat <- stats::predict(regr, s = 'lambda.1se', model$X[[w]])
+        }
         model$mu[w,] <- coef[,] # intercept and coefficients of predictors
         B <- t(X) %*% X + regr$lambda.1se * diag(model$p + 1)
         model$V[w,,] <- array(mean((model$y[[w]] - yhat)^2) * solve(B))
@@ -137,7 +153,7 @@ draw_thompson <- function(
     end,
     xs = NULL
 ) {
-  floor <- model$floor_start / (model$floor_decay * start)
+  floor <- min(model$floor_start / (model$floor_decay * start), 1/model$K)
 
   if(!is.null(xs)){
     # Draws arms with a LinTS agent for the observed covariates.
@@ -156,7 +172,8 @@ draw_thompson <- function(
       ps[s, ] <- table(factor(apply(draws[s, , ], 2, which.max), levels = 1:model$K) ) / model$num_mc
       ps[s, ] <- impose_floor(ps[s, ], floor)
     }
-    w <- sapply(1:(end - start + 1), function(t) sample(1:model$K, size=1, prob=ps[start + t - 1, ]))
+    w <- sapply(1:(end - start + 1), function(t) sample(1:model$K, size=1,
+                                                        prob=ps[start + t - 1, ]))
 
   } else {
     # Draws arms with a non-contextual TS agent.
@@ -216,6 +233,9 @@ run_experiment <- function(
   # - xs: covariate X_t of shape [A, p]
   # - ys: potential outcomes of shape [A, K]
   # OUTPUT:
+
+  check_first_batch(batch_sizes, ys)
+
   # - pulled arms, observed rewards, assignment probabilities
   A <- dim(ys)[1] # A: the number of observations
   K <- dim(ys)[2] # K: the number of arms
@@ -235,7 +255,10 @@ run_experiment <- function(
 
   # uniform sampling at the first batch
   batch_size_cumsum <- cumsum(batch_sizes) #
-  ws[1:batch_size_cumsum[1]] <- sample(1:K, batch_size_cumsum[1], replace = TRUE) # TODO: make complete RA
+  ws[1:batch_size_cumsum[1]] <- sample( # complete RA in first batch
+    c(rep(1:K, batch_size_cumsum[1]%/%K),
+      sample(1:K, batch_size_cumsum[1]%%K)),
+    batch_size_cumsum[1], replace = FALSE)
   yobs[1:batch_size_cumsum[1]] <- ys[cbind(1:batch_size_cumsum[1], ws[1:batch_size_cumsum[1]])]
   probs[1:batch_size_cumsum[1], , ] <- array(1/K, dim = c(batch_size_cumsum[1], A, K))
 
@@ -337,6 +360,12 @@ generate_bandit_data <- function(X=NULL,
                                  signal_strength=1.0) {
   # Generate covariates and potential outcomes from a classification dataset.
 
+  if(is.null(X)){
+    X <- matrix(rnorm(100*3), nrow = 100, ncol =3)
+  }
+  if(is.null(y)){
+    y <- sample(1:3, size = 100, replace = TRUE)
+  }
   shuffler <- sample(1:nrow(X))
   xs <- X[shuffler,]
   ys <- y[shuffler]
@@ -355,6 +384,7 @@ generate_bandit_data <- function(X=NULL,
   return(list(data = data, mus = mus))
 }
 
+#' @export
 simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676, signal_strength=1.0, seed=NULL, noise_form='normal') {
   # Generate covariates and potential outcomes of a synthetic dataset.
 
@@ -510,5 +540,14 @@ plot_cumulative_assignment <- function(
   graphics::matplot(dat, type = c("l"), col =1:K)
   graphics::abline(v=batch_size_cumsum, col="#00ccff")
   graphics::legend("topleft", legend = 1:K, col=1:K, lty=1:K)
+}
+
+
+# Check inference is being conducted on > 1 obs
+check_A <- function(A) {
+  err <- paste0('Number of observations must be greater than 1 to conduct inference. ',
+                'Number of observations is: ', A,'.')
+  if(A>1) return(NULL)
+  stop(err)
 }
 

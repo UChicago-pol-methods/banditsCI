@@ -19,4 +19,5 @@ Imports:
 Collate:
   'experiment_utils.R'
   'adaptive_utils.R'
+  'errors.R'
 VignetteBuilder: knitr

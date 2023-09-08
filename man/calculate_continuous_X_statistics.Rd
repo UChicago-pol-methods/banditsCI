@@ -22,9 +22,17 @@ Compute the estimate and variance of a policy evaluation based on adaptive weigh
 and a policy matrix.
 }
 \examples{
-h <- matrix(c(0.4, 0.3, 0.2, 0.1, 0.2, 0.3, 0.3, 0.2, 0.5, 0.3, 0.2, 0.1, 0.1, 0.2, 0.1, 0.6), ncol = 4)
-scores <- matrix(c(0.5, 0.8, 0.6, 0.3, 0.9, 0.2, 0.5, 0.7, 0.4, 0.8, 0.2, 0.6), ncol = 3)
-policy <- matrix(c(0.2, 0.3, 0.5, 0.6, 0.1, 0.3, 0.4, 0.5, 0.1, 0.2, 0.7, 0.1), ncol = 3)
+h <- matrix(c(0.4, 0.3, 0.2, 0.1,
+               0.2, 0.3, 0.3, 0.2,
+               0.5, 0.3, 0.2, 0.1,
+               0.1, 0.2, 0.1, 0.6), ncol = 4)
+scores <- matrix(c(0.5, 0.8, 0.6, 0.3,
+                   0.9, 0.2, 0.5, 0.7,
+                   0.4, 0.8, 0.2, 0.6), ncol = 3)
+policy <- matrix(c(0.2, 0.3, 0.5,
+                   0.6, 0.1, 0.3,
+                   0.4, 0.5, 0.1,
+                   0.2, 0.7, 0.1), ncol = 3)
 gammahat <- scores - policy
 calculate_continuous_X_statistics(h = h, gammahat = gammahat, policy = policy)
 

@@ -2,7 +2,12 @@ library(testthat)
 
 test_that("update_thompson updates the model parameters correctly", {
   # Create a sample model
-  model <- LinTSModel(K = 5, p = 3, floor_start = 1, floor_decay = 0.9, num_mc = 100, is_contextual = TRUE)
+  model <- LinTSModel(K = 3,
+                      p = 3,
+                      floor_start = 1,
+                      floor_decay = 0.9,
+                      num_mc = 100,
+                      is_contextual = TRUE)
 
   # Generate sample data
   ws <- c(3, 2, 1)

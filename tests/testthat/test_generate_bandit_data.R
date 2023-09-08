@@ -4,7 +4,8 @@ library(testthat)
 
 test_that("generate_bandit_data generates the expected data structure", {
   # Call the generate_bandit_data function
-  generated_data <- generate_bandit_data()
+  generated_data <- generate_bandit_data(noise_std=0,
+                                         signal_strength=1.0)
 
   # Perform assertions to check the expected structure of the generated data
   expect_true(is.list(generated_data))
@@ -40,7 +41,7 @@ test_that("generate_bandit_data generates the expected data structure", {
   expect_equal(dim(muxs)[1], A)
   expect_equal(dim(muxs)[2], K)
 
-  expect_true(is.integer(ys))
+  expect_true(is.numeric(ys))
 
   expect_true(is.numeric(A))
   expect_true(A <= 20000)
@@ -61,12 +62,13 @@ test_that("generate_bandit_data generates data with custom parameters", {
   signal_strength <- 0.8
 
   # Call the generate_bandit_data function with custom parameters
-  generated_data <- generate_bandit_data(noise_std = noise_std, signal_strength = signal_strength)
+  generated_data <- generate_bandit_data(noise_std = noise_std,
+                                         signal_strength = signal_strength)
 
   # Perform assertions to check the expected values
   ys <- generated_data$data$ys
   muxs <- generated_data$data$muxs
 
-  expect_equal(sd(ys), noise_std)
+  expect_equal(sd(ys-muxs), noise_std, tolerance = .1) #inexact w/ small n
   expect_true(all(muxs <= signal_strength))
 })

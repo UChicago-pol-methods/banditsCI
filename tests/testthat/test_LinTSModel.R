@@ -1,10 +1,15 @@
 library(testthat)
 
 test_that("LinTSModel creates the correct model structure", {
-  model <- LinTSModel(K = 5, p = 3, floor_start = 1, floor_decay = 0.9, num_mc = 100, is_contextual = TRUE)
+  model <- LinTSModel(K = 5,
+                      p = 3,
+                      floor_start = 1,
+                      floor_decay = 0.9,
+                      num_mc = 100,
+                      is_contextual = TRUE)
 
-  expect_is(model, "list")
-  expect_equal(length(model), 9)
+  expect_type(model, "list")
+  expect_equal(length(model), 11)
 
   expect_equal(model$num_mc, 100)
   expect_equal(model$K, 5)
