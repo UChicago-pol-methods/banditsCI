@@ -170,9 +170,17 @@ estimate <- function(w, gammahat, policy){
 #' policy value and the variance of the estimate, respectively.
 #'
 #' @examples
-#' h <- matrix(c(0.4, 0.3, 0.2, 0.1, 0.2, 0.3, 0.3, 0.2, 0.5, 0.3, 0.2, 0.1, 0.1, 0.2, 0.1, 0.6), ncol = 4)
-#' scores <- matrix(c(0.5, 0.8, 0.6, 0.3, 0.9, 0.2, 0.5, 0.7, 0.4, 0.8, 0.2, 0.6), ncol = 3)
-#' policy <- matrix(c(0.2, 0.3, 0.5, 0.6, 0.1, 0.3, 0.4, 0.5, 0.1, 0.2, 0.7, 0.1), ncol = 3)
+#' h <- matrix(c(0.4, 0.3, 0.2, 0.1,
+#'                0.2, 0.3, 0.3, 0.2,
+#'                0.5, 0.3, 0.2, 0.1,
+#'                0.1, 0.2, 0.1, 0.6), ncol = 4)
+#' scores <- matrix(c(0.5, 0.8, 0.6, 0.3,
+#'                    0.9, 0.2, 0.5, 0.7,
+#'                    0.4, 0.8, 0.2, 0.6), ncol = 3)
+#' policy <- matrix(c(0.2, 0.3, 0.5,
+#'                    0.6, 0.1, 0.3,
+#'                    0.4, 0.5, 0.1,
+#'                    0.2, 0.7, 0.1), ncol = 3)
 #' gammahat <- scores - policy
 #' calculate_continuous_X_statistics(h = h, gammahat = gammahat, policy = policy)
 #'
@@ -206,6 +214,7 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #'
 #' This function calculates treatment effect estimates using augmented inverse probability weighting (AIPW) with various weighting schemes. The function estimates the value of a single arm or treatment effects of policies as compared to the control, using the difference in AIPW scores as the unbiased scoring rule or the difference in means between two policies. The function provides estimates under various weighting schemes, including uniform, non-contextual minvar, contextual minvar, non-contextual stablevar, contextual stablevar, and non-contextual two-point. The function is based on the algorithm developed in Zhan et al. (2021).
 #'
+#' @param A The value of A.
 #' @param policy0 A * K control policy matrix for contrast evaluation, with probabilities under control. When `policy0 = NULL`, the function is estimating the value \eqn{Q(w)} of a single arm w. When `policy0` doesn't equal to `NULL`, the function is estimating treatment effects of policies as compared to control \eqn{\Delta(w_1, w_2)}, using the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}.
 #' @param policy1 list of A * K counterfactual treatment policy matrices for evaluation, with assignment probabilities under each policy.
 #' @param contrasts Define the approach to estimate treatment effects. `combined` indicates the first approach -- the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}; `separate` indicates the second approach -- \eqn{\hat \Delta (w_1, w_2) = \hat Q (w_1) - \hat Q (w_2)}.
@@ -216,6 +225,8 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #' @param contextual_minvar Logical, estimate contextual minvar weights.
 #' @param non_contextual_stablevar Logical, estimate non-contextual stablevar weights.
 #' @param contextual_stablevar Logical, estimate contextual stablevar weights.
+#' @param non_contextual_twopoint The non_contextual_twopoint parameter.
+#' @param out_full The out_full parameter.
 #'
 #' @return A list of treatment effect estimates under different weighting schemes.
 #' @export
