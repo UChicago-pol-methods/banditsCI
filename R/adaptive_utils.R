@@ -227,7 +227,8 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #' estimates <- output_estimates(policy1 = data$policy1,
 #'                               gammahat = data$gammahat,
 #'                               contextual_probs = data$contextual_probs)
-output_estimates <- function(policy0 = NULL,
+output_estimates <- function(A,
+                            policy0 = NULL,
                              policy1,
                              contrasts = 'combined',
                              gammahat,
@@ -237,7 +238,8 @@ output_estimates <- function(policy0 = NULL,
                              contextual_minvar = TRUE,
                              non_contextual_stablevar = TRUE,
                              contextual_stablevar = TRUE,
-                             non_contextual_twopoint = TRUE){
+                             non_contextual_twopoint = TRUE,
+                            out_full = NULL){
   # policy0: A * K control policy matrix for contrast evaluation, with probabilities under control
   ## when policy0 = NULL, the function is estimating the value \eqn{Q(w)} of a single arm w
   ## when policy0 doesn't equal to NULL, the function is estimating treatment effects of policies as compared to control \eqn{\Delta(w_1, w_2)}, using the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}
@@ -278,8 +280,8 @@ output_estimates <- function(policy0 = NULL,
 
     if(non_contextual_twopoint){
       e <- t(sapply(1:A, function(x) contextual_probs[x,x,]))
-      twopoint_ratio <- twopoint_stable_var_ratio(e=e, alpha=0)
-      twopoint_h2es <- stick_breaking(twopoint_ratio)
+      twopoint_ratio <- twopoint_stable_var_ratio(A=A, e=e, alpha=0)
+      twopoint_h2es <- stick_breaking(A, K, twopoint_ratio)
       wts_twopoint <- sqrt(ifelse_clip(twopoint_h2es * e, 0, twopoint_h2es * e))
     }
 
@@ -384,7 +386,7 @@ output_estimates <- function(policy0 = NULL,
 #'
 #' @export
 # Two-point allocation scheme
-stick_breaking <- function(Z){
+stick_breaking <- function(A, K, Z){
   # Stick breaking algorithm in stable-var weights calculation
   #
   # Input
@@ -433,7 +435,7 @@ ifelse_clip <- function(lamb, x, y) {
 #' twopoint_stable_var_ratio(0.1, 0.5)
 #'
 #' @export
-twopoint_stable_var_ratio <- function(e, alpha){
+twopoint_stable_var_ratio <- function(A, e, alpha){
   a <-  c(length(A+1), 1)
   # bad arm, e small
   # this rearranging of the formula in the paper seems to be slightly more

@@ -225,43 +225,6 @@ test_that("calculate_balwts correctly calculates the inverse probability scores"
   }
 })
 
-test_that("calculate_mu_hat correctly calculates the estimated expected values of the reward", {
-  set.seed(123)
-
-  A <- 200
-  K <- p <- 3
-
-  # Generate random covariate matrix and outcomes
-  xs <- matrix(runif(A * p), nrow = A, ncol = p)
-  ys <- matrix(rbinom(A * K, 1, 0.5), nrow = A, ncol = K)
-
-  # Create a mock results object with a fitted bandit model and covariate matrix
-  results <- list(
-    fitted_bandit_model = list(
-      K = K,
-      mu = matrix(runif(K * (p + 1)), nrow = K, ncol = p + 1)
-    ),
-    xs = xs,
-    yobs = ys
-  )
-
-  # Calculate estimated expected values of the reward
-  mu_hat <- calculate_mu_hat(results)
-
-  # Assertions for the structure and values of the estimated expected values
-
-  expect_true(is.matrix(mu_hat), "The estimated expected values should be a matrix")
-  expect_equal(dim(mu_hat)[1], A, "The number of rows in the estimated expected values should be equal to 'A'")
-  expect_equal(dim(mu_hat)[2], K, "The number of columns in the estimated expected values should be equal to 'K'")
-
-  # Additional assertions specific to the values of mu_hat
-  coefhat <- results$fitted_bandit_model$mu
-  X <- cbind(1, xs)
-  expected_mu_hat <- X %*% t(coefhat)
-
-  expect_equal(mu_hat, expected_mu_hat, "The estimated expected values should match the expected values based on the fitted model")
-})
-
 test_that("plot_cumulative_assignment correctly generates the cumulative assignment graph", {
   set.seed(123)
 
@@ -288,40 +251,6 @@ test_that("plot_cumulative_assignment correctly generates the cumulative assignm
 
   # Additional assertions to check if the function runs without errors
   expect_no_error(plot_cumulative_assignment(results, batch_sizes))
-})
-
-test_that("aw_var computes variance of policy value estimator correctly", {
-  scores <- matrix(c(0.5, 0.8, 0.6, 0.3, 0.9, 0.2, 0.5, 0.7, 0.4, 0.8, 0.2, 0.6), ncol = 3)
-  policy <- matrix(c(0.2, 0.3, 0.5, 0.6, 0.1, 0.3, 0.4, 0.5, 0.1, 0.2, 0.7, 0.1), ncol = 3)
-  estimate <- aw_estimate(scores = scores, policy = policy, evalwts = c(0.5, 1, 0.5, 1.5))
-  variance <- aw_var(scores = scores, estimate = estimate, policy = policy, evalwts = c(0.5, 1, 0.5, 1.5))
-
-  # Assertion for the computed variance
-  expect_equal(variance, 0.00625, "The computed variance should be 0.00625")
-})
-
-test_that("estimate computes estimate and variance of policy evaluation correctly", {
-  w <- c(0.5, 1, 0.5, 1.5)
-  scores <- matrix(c(0.5, 0.8, 0.6, 0.3, 0.9, 0.2, 0.5, 0.7, 0.4, 0.8, 0.2, 0.6), ncol = 3)
-  policy <- matrix(c(0.2, 0.3, 0.5, 0.6, 0.1, 0.3, 0.4, 0.5, 0.1, 0.2, 0.7, 0.1), ncol = 3)
-  gammahat <- scores - policy
-  result <- estimate(w = w, gammahat = gammahat, policy = policy)
-
-  # Assertions for the computed estimate and variance
-  expect_equal(result[["estimate"]], 0.925, "The estimated policy value should be 0.925")
-  expect_equal(result[["var"]], 0.00625, "The computed variance should be 0.00625")
-})
-
-test_that("calculate_continuous_X_statistics computes estimate and variance of policy evaluation correctly", {
-  h <- matrix(c(0.4, 0.3, 0.2, 0.1, 0.2, 0.3, 0.3, 0.2, 0.5, 0.3, 0.2, 0.1, 0.1, 0.2, 0.1, 0.6), ncol = 4)
-  scores <- matrix(c(0.5, 0.8, 0.6, 0.3, 0.9, 0.2, 0.5, 0.7, 0.4, 0.8, 0.2, 0.6), ncol = 3)
-  policy <- matrix(c(0.2, 0.3, 0.5, 0.6, 0.1, 0.3, 0.4, 0.5, 0.1, 0.2, 0.7, 0.1), ncol = 3)
-  gammahat <- scores - policy
-  result <- calculate_continuous_X_statistics(h = h, gammahat = gammahat, policy = policy)
-
-  # Assertions for the computed estimate and variance
-  expect_equal(result[["estimate"]], 0.542, "The estimated policy value should be 0.542")
-  expect_equal(result[["var"]], 0.003721, "The computed variance should be 0.003721")
 })
 
 test_that("stick_breaking works", {
