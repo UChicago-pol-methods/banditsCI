@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(banditCI)
+library(banditsCI)
 
-test_check("banditCI")
+test_check("banditsCI")

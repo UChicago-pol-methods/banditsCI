@@ -231,7 +231,7 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #'
 #' @examples
 #' # Generate simulated data
-#' data <- generate_data()
+#' data <- generate_bandit_data()
 #' # Estimate treatment effects using AIPW with various weighting schemes
 #' estimates <- output_estimates(policy1 = data$policy1,
 #'                               gammahat = data$gammahat,
@@ -262,7 +262,7 @@ output_estimates <- function(policy0 = NULL,
 
   A <- nrow(gammahat)
   K <- ncol(gammahat)
-  check_A(A)
+  .check_A(A)
   if(contrasts == 'combined' | is.null(policy0)){
     # Now we are using the first approach: use the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}
     if (length(dim(contextual_probs))==2){

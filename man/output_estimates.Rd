@@ -49,7 +49,7 @@ This function calculates treatment effect estimates using augmented inverse prob
 }
 \examples{
 # Generate simulated data
-data <- generate_data()
+data <- generate_bandit_data()
 # Estimate treatment effects using AIPW with various weighting schemes
 estimates <- output_estimates(policy1 = data$policy1,
                               gammahat = data$gammahat,

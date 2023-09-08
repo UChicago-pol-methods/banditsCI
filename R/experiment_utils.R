@@ -72,7 +72,7 @@ update_thompson <- function(
       model$ps[[w]] <- c(model$ps[[w]], ps[cbind(ws == w,w)])
       # if no variation in ys
       if(length(unique(model$y[[w]])) == 1){
-        regr <- lm(model$y[[w]] ~ model$X[[w]])
+        regr <- stats::lm(model$y[[w]] ~ model$X[[w]])
         regr$lambda.1se = 9999
         coef <- matrix(c(unique(model$y[[w]]), rep(0, ncol(model$X[[w]]))),
                        ncol = 1)
@@ -234,7 +234,7 @@ run_experiment <- function(
   # - ys: potential outcomes of shape [A, K]
   # OUTPUT:
 
-  check_first_batch(batch_sizes, ys)
+  .check_first_batch(batch_sizes, ys)
 
   # - pulled arms, observed rewards, assignment probabilities
   A <- dim(ys)[1] # A: the number of observations
@@ -361,7 +361,7 @@ generate_bandit_data <- function(X=NULL,
   # Generate covariates and potential outcomes from a classification dataset.
 
   if(is.null(X)){
-    X <- matrix(rnorm(100*3), nrow = 100, ncol =3)
+    X <- matrix(stats::rnorm(100*3), nrow = 100, ncol =3)
   }
   if(is.null(y)){
     y <- sample(1:3, size = 100, replace = TRUE)
@@ -540,14 +540,5 @@ plot_cumulative_assignment <- function(
   graphics::matplot(dat, type = c("l"), col =1:K)
   graphics::abline(v=batch_size_cumsum, col="#00ccff")
   graphics::legend("topleft", legend = 1:K, col=1:K, lty=1:K)
-}
-
-
-# Check inference is being conducted on > 1 obs
-check_A <- function(A) {
-  err <- paste0('Number of observations must be greater than 1 to conduct inference. ',
-                'Number of observations is: ', A,'.')
-  if(A>1) return(NULL)
-  stop(err)
 }
 
