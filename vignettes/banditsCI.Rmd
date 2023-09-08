@@ -122,7 +122,11 @@ out_full_te1 <- output_estimates(
 ## The second approach takes asymptotically normal inference about \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
 out_full_te2 <- output_estimates(
   A = A,
-  contrasts = 'separate')
+  policy0 = policy0,
+  policy1 = policy1[-1],  ## remove the control arm from policy1
+  contrasts = 'separate',
+  gammahat = aipw_scoresR_learn, 
+  contextual_probs = results$probs)
 
 
 # Figure
@@ -223,7 +227,11 @@ out_full_te1 <- output_estimates(
 ## The second approach takes asymptotically normal inference about \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
 out_full_te2 <- output_estimates(
   A = A,
-  contrasts = 'separate')
+  policy0 = policy0,
+  policy1 = policy1[-1],  ## remove the control arm from policy1
+  contrasts = 'separate',
+  gammahat = aipw_scoresR_learn, 
+  contextual_probs = probs)
 
 
 # Figure

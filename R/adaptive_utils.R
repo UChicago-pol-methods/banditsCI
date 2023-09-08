@@ -40,10 +40,10 @@ aw_scores <- function(yobs, ws, balwts, K, mu_hat=NULL) {
     return(output)
   }
   scores <- expand(balwts * yobs, ws, K)
-    # Y[t]*W[t]/e[t] term
-    if (!is.null(mu_hat)){
-      scores <- scores + (1 - expand(balwts, ws, K)) * mu_hat
-    }
+  # Y[t]*W[t]/e[t] term
+  if (!is.null(mu_hat)){
+    scores <- scores + (1 - expand(balwts, ws, K)) * mu_hat
+  }
   return(scores)
 }
 
@@ -239,7 +239,7 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #'                               gammahat = data$gammahat,
 #'                               contextual_probs = data$contextual_probs)
 output_estimates <- function(A,
-                            policy0 = NULL,
+                             policy0 = NULL,
                              policy1,
                              contrasts = 'combined',
                              gammahat,
@@ -250,7 +250,7 @@ output_estimates <- function(A,
                              non_contextual_stablevar = TRUE,
                              contextual_stablevar = TRUE,
                              non_contextual_twopoint = TRUE,
-                            out_full = NULL){
+                             out_full = NULL){
   # policy0: A * K control policy matrix for contrast evaluation, with probabilities under control
   ## when policy0 = NULL, the function is estimating the value \eqn{Q(w)} of a single arm w
   ## when policy0 doesn't equal to NULL, the function is estimating treatment effects of policies as compared to control \eqn{\Delta(w_1, w_2)}, using the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}
@@ -264,7 +264,7 @@ output_estimates <- function(A,
   # non_contextual_stablevar: logical, estimate non-contextual stablevar weights
   # contextual_stablevar: logical, estimate contextual stablevar weights
 
-  if(contrasts == 'combined'){
+  if(contrasts == 'combined' | is.null(policy0)){
     # Now we are using the first approach: use the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}
     if (length(dim(contextual_probs))==2){
       z <- array(0,dim=c(nrow(contextual_probs), nrow(contextual_probs), ncol(contextual_probs)))
@@ -370,14 +370,43 @@ output_estimates <- function(A,
 
     # The second approach takes asymptotically normal inference about \eqn{\Delta(w_1, w_2)}: \eqn{\hat\Delta (w_1, w_2) = \hat Q (w_1) - \hat Q (w_2)}
   } else if (contrasts == 'separate'){
-    out_full0 <- out_full[[1]]
-    out_full1 <- out_full
-    out_full1[[1]] <- NULL
+    # control estimates
+    out_full0 = output_estimates(
+      A = A,
+      policy0 = NULL,
+      policy1 = list(policy0),
+      gammahat = gammahat,
+      contextual_probs = contextual_probs,
+      uniform = uniform,
+      non_contextual_minvar = non_contextual_minvar,
+      contextual_minvar = contextual_minvar,
+      non_contextual_stablevar = non_contextual_stablevar,
+      contextual_stablevar = contextual_stablevar,
+      non_contextual_twopoint = non_contextual_twopoint,
+      out_full = out_full
+    )
+
+    # treatment estimates
+    out_full1 = output_estimates(
+      A = A,
+      policy0 = NULL,
+      policy1 = policy1,
+      gammahat = gammahat,
+      contextual_probs = contextual_probs,
+      uniform = uniform,
+      non_contextual_minvar = non_contextual_minvar,
+      contextual_minvar = contextual_minvar,
+      non_contextual_stablevar = non_contextual_stablevar,
+      contextual_stablevar = contextual_stablevar,
+      non_contextual_twopoint = non_contextual_twopoint,
+      out_full = out_full
+    )
+
     out_full_te2 <- lapply(out_full1, function(x){
       # estimate the difference in means
-      x_mean <- x[,'estimate'] - out_full0[,'estimate']
+      x_mean <- x[,'estimate'] - out_full0[[1]][,'estimate']
       # estimate the variance
-      x_var <- sqrt(x[,"std.error"]^2 + out_full0[,"std.error"]^2) # Calculate the standard error. Function (24) in Zhan et al. 2021
+      x_var <- sqrt(x[,"std.error"]^2 + out_full0[[1]][,"std.error"]^2) # Calculate the standard error. Function (24) in Zhan et al. 2021
       cbind('estimate' = x_mean, 'std.error' = x_var)
     })
     return(out_full_te2)
