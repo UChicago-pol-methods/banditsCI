@@ -230,12 +230,21 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #' @export
 #'
 #' @examples
-#' # Generate simulated data
-#' data <- generate_bandit_data()
-#' # Estimate treatment effects using AIPW with various weighting schemes
-#' estimates <- output_estimates(policy1 = data$policy1,
-#'                               gammahat = data$gammahat,
-#'                               contextual_probs = data$contextual_probs)
+#' # Generate example values for policy1, gammahat, and contextual_probs
+#' scores <- matrix(c(0.5, 0.8, 0.6, 0.3,
+#'                    0.9, 0.2, 0.5, 0.7,
+#'                    0.4, 0.8, 0.2, 0.6), ncol = 3)
+#' policy <- matrix(c(0.2, 0.3, 0.5,
+#'                    0.6, 0.1, 0.3,
+#'                    0.4, 0.5, 0.1,
+#'                    0.2, 0.7, 0.1), ncol = 3)
+#' gammahat <- scores - policy
+#' policy1 <- list(policy, policy, policy)  # Example value for policy1
+#' contextual_probs <- array(runif(4 * 4 * 3), dim = c(4, 4, 3))
+#' estimates <- output_estimates(policy1 = policy1,
+#'                               gammahat = gammahat,
+#'                               contextual_probs = contextual_probs)
+#'
 output_estimates <- function(policy0 = NULL,
                              policy1,
                              contrasts = 'combined',

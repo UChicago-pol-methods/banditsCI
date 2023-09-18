@@ -384,7 +384,34 @@ generate_bandit_data <- function(X=NULL,
   return(list(data = data, mus = mus))
 }
 
-#' @export
+#' Generate Synthetic Data for a Simple Tree Model
+#'
+#' Generates covariates and potential outcomes of a synthetic dataset for a simple tree model.
+#'
+#' @param A Integer. Number of observations in the dataset.
+#' @param K Integer. Number of treatment arms.
+#' @param p Integer. Number of covariates.
+#' @param noise_std Numeric. Standard deviation of the noise added to the potential outcomes.
+#' @param split Numeric. Split point for creating treatment groups based on the covariates.
+#' @param signal_strength Numeric. Strength of the signal in the potential outcomes.
+#' @param seed Integer. Seed value for reproducibility.
+#' @param noise_form Character. Distribution of the noise added to the potential outcomes.
+#'   Can be either "normal" or "uniform".
+#'
+#' @return A list containing the generated dataset and the true potential outcome means.
+#'   The dataset includes the following components:
+#'   \itemize{
+#'     \item \code{xs}: Covariate matrix.
+#'     \item \code{ys}: Potential outcome matrix.
+#'     \item \code{muxs}: True treatment assignment matrix.
+#'     \item \code{wxs}: Binary treatment indicator matrix.
+#'   }
+#'   The true potential outcome means are stored in the \code{mus} component.
+#'
+#' @examples
+#' synthetic_data <- simple_tree_data(A = 100, K = 4, p = 10, noise_std = 1.0, split = 1.676,
+#'                                    signal_strength = 1.0, seed = 123, noise_form = "normal")
+#'
 simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676, signal_strength=1.0, seed=NULL, noise_form='normal') {
   # Generate covariates and potential outcomes of a synthetic dataset.
 
