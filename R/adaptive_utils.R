@@ -231,17 +231,20 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #'
 #' @examples
 #' # Generate example values for policy1, gammahat, and contextual_probs
-#' scores <- matrix(c(0.5, 0.8, 0.6, 0.3,
-#'                    0.9, 0.2, 0.5, 0.7,
-#'                    0.4, 0.8, 0.2, 0.6), ncol = 3)
+#' scores <- matrix(c(0.5, 0.8, 0.6,
+#'                    0.3, 0.9, 0.2,
+#'                    0.5, 0.7, 0.4,
+#'                    0.8, 0.2, 0.6), ncol = 3)
 #' policy <- matrix(c(0.2, 0.3, 0.5,
 #'                    0.6, 0.1, 0.3,
 #'                    0.4, 0.5, 0.1,
 #'                    0.2, 0.7, 0.1), ncol = 3)
 #' gammahat <- scores - policy
-#' policy1 <- list(policy, policy, policy)  # Example value for policy1
-#' contextual_probs <- array(runif(4 * 4 * 3), dim = c(4, 4, 3))
+#' policy1 <- matrix(runif(4*3), ncol = 3)
+#' policy0 <- matrix(runif(4*3), ncol = 3)
+#' contextual_probs <- array(runif(4 * 3), dim = c( 4, 3))
 #' estimates <- output_estimates(policy1 = policy1,
+#'                               policy0 = policy0,
 #'                               gammahat = gammahat,
 #'                               contextual_probs = contextual_probs)
 #'
