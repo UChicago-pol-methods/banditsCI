@@ -384,7 +384,7 @@ generate_bandit_data <- function(X=NULL,
   return(list(data = data, mus = mus))
 }
 
-#' Generate Synthetic Data for a Simple Tree Model
+#' simple_tree_data function
 #'
 #' Generates covariates and potential outcomes of a synthetic dataset for a simple tree model.
 #'

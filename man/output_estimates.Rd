@@ -48,10 +48,22 @@ A list of treatment effect estimates under different weighting schemes.
 This function calculates treatment effect estimates using augmented inverse probability weighting (AIPW) with various weighting schemes. The function estimates the value of a single arm or treatment effects of policies as compared to the control, using the difference in AIPW scores as the unbiased scoring rule or the difference in means between two policies. The function provides estimates under various weighting schemes, including uniform, non-contextual minvar, contextual minvar, non-contextual stablevar, contextual stablevar, and non-contextual two-point. The function is based on the algorithm developed in Zhan et al. (2021).
 }
 \examples{
-# Generate simulated data
-data <- generate_bandit_data()
-# Estimate treatment effects using AIPW with various weighting schemes
-estimates <- output_estimates(policy1 = data$policy1,
-                              gammahat = data$gammahat,
-                              contextual_probs = data$contextual_probs)
+# Generate example values for policy1, gammahat, and contextual_probs
+scores <- matrix(c(0.5, 0.8, 0.6,
+                   0.3, 0.9, 0.2,
+                   0.5, 0.7, 0.4,
+                   0.8, 0.2, 0.6), ncol = 3)
+policy <- matrix(c(0.2, 0.3, 0.5,
+                   0.6, 0.1, 0.3,
+                   0.4, 0.5, 0.1,
+                   0.2, 0.7, 0.1), ncol = 3)
+gammahat <- scores - policy
+policy1 <- matrix(runif(4*3), ncol = 3)
+policy0 <- matrix(runif(4*3), ncol = 3)
+contextual_probs <- array(runif(4 * 3), dim = c( 4, 3))
+estimates <- output_estimates(policy1 = policy1,
+                              policy0 = policy0,
+                              gammahat = gammahat,
+                              contextual_probs = contextual_probs)
+
 }

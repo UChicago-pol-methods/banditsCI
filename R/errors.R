@@ -15,3 +15,14 @@
   if(A>1) return(NULL)
   stop(err)
 }
+
+#' @export
+.check_shape <- function(gammahats, contextual_probs) {
+  if (!identical(dim(gammahats), dim(contextual_probs))) {
+    stop("Error: gammahats and contextual_probs must have the same shape.")
+  }
+
+  if (length(gammahats) <= 1 || length(contextual_probs) <= 1) {
+    stop("Error: gammahats and contextual_probs must have a length greater than 1.")
+  }
+}
