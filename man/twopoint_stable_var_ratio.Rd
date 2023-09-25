@@ -21,6 +21,6 @@ This function calculates the allocation ratio for a two-point stable-variance ba
 }
 \examples{
 # Calculate the allocation ratio for a two-point stable-variance bandit with e=0.1 and alpha=0.5
-twopoint_stable_var_ratio(0.1, 0.5)
+twopoint_stable_var_ratio(1000, 0.1, 0.5)
 
 }

@@ -48,7 +48,13 @@ A list containing the generated dataset and the true potential outcome means.
 Generates covariates and potential outcomes of a synthetic dataset for a simple tree model.
 }
 \examples{
-synthetic_data <- simple_tree_data(A = 100, K = 4, p = 10, noise_std = 1.0, split = 1.676,
-                                   signal_strength = 1.0, seed = 123, noise_form = "normal")
+A <- 1000
+K <- 4     # Number of treatment arms
+p <- 10    # Number of covariates
+noise_std <- 1.0      # Standard deviation of noise
+split <- 1.676       # Split value for generating binary assignments
+signal_strength <- 1.0  # Signal strength multiplier
+seed <- 123           # Seed for reproducibility
+noise_form <- 'normal'  # Noise form (either 'normal' or 'uniform')
 
 }

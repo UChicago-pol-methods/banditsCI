@@ -54,7 +54,10 @@ LinTSModel <- function(K,
 #'
 #' @examples
 #' model <- LinTSModel(K=5, p=3, floor_start=1, floor_decay=0.9, num_mc=100, is_contextual=TRUE)
-#' model <- update_thompson(ws=c(3,2,1), yobs=c(1,0,1), model=model, xs=matrix(rnorm(9), ncol=3))
+#' A <- 1000
+#' ws <- numeric(A)
+#' yobs <- numeric(A)
+#' model <- update_thompson(ws=ws, yobs=yobs, model=model)
 #'
 #' @export
 update_thompson <- function(
@@ -209,15 +212,16 @@ draw_thompson <- function(
 #' @return A list containing the pulled arms (ws), observed rewards (yobs), assignment probabilities (probs), and the fitted bandit model (fitted_bandit_model)
 #'
 #' @examples
-#' ys <- matrix(rbinom(1000, 1, 0.5), ncol=5)
-#' xs <- matrix(rnorm(300), ncol=3)
-#' batch_sizes <- c(100, 200, 700)
-#' result <- run_experiment(ys=ys,
-#'                           floor_start=1,
-#'                           floor_decay=0.9,
-#'                           batch_sizes=batch_sizes,
-#'                           xs=xs,
-#'                           balanced=TRUE)
+#'A <- 1000
+#'K <- 4
+#'xs <- matrix(runif(A * K), nrow = A, ncol = K)
+#'ys <- matrix(rbinom(A * K, 1, 0.5), nrow = A, ncol = K)
+#'batch_sizes <- c(250, 250, 250, 250)
+#'results <- run_experiment(ys = ys,
+#'                          floor_start = 5,
+#'                          floor_decay = 0.9,
+#'                          batch_sizes = batch_sizes,
+#'                          xs = xs)
 #'
 #' @export
 run_experiment <- function(
@@ -409,10 +413,17 @@ generate_bandit_data <- function(X=NULL,
 #'   The true potential outcome means are stored in the \code{mus} component.
 #'
 #' @examples
-#' synthetic_data <- simple_tree_data(A = 100, K = 4, p = 10, noise_std = 1.0, split = 1.676,
-#'                                    signal_strength = 1.0, seed = 123, noise_form = "normal")
+#' A <- 1000
+#' K <- 4     # Number of treatment arms
+#' p <- 10    # Number of covariates
+#' noise_std <- 1.0      # Standard deviation of noise
+#' split <- 1.676       # Split value for generating binary assignments
+#' signal_strength <- 1.0  # Signal strength multiplier
+#' seed <- 123           # Seed for reproducibility
+#' noise_form <- 'normal'  # Noise form (either 'normal' or 'uniform')
 #'
-simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676, signal_strength=1.0, seed=NULL, noise_form='normal') {
+simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676,
+                             signal_strength=1.0, seed=NULL, noise_form='normal') {
   # Generate covariates and potential outcomes of a synthetic dataset.
 
   stopifnot(p >= 2) # to check the input parameters satisfy certain conditions
@@ -535,13 +546,17 @@ calculate_mu_hat <- function(results) {
 #' @return A plot of the cumulative assignment graph
 #'
 #' @examples
-#' A <- 5
-#' K <- 3
+#' A <- 1000
+#' K <- 4
 #' xs <- matrix(runif(A * K), nrow = A, ncol = K)
 #' ys <- matrix(rbinom(A * K, 1, 0.5), nrow = A, ncol = K)
-#' model <- bandit_lin_ucb(xs, ys)
-#' experiment <- run_experiment(model, batch_sizes = c(10, 20, 30))
-#' plot_cumulative_assignment(experiment$results, experiment$batch_sizes)
+#' batch_sizes <- c(250, 250, 250, 250)
+#' results <- run_experiment(ys = ys,
+#'                           floor_start = 5,
+#'                           floor_decay = 0.9,
+#'                           batch_sizes = batch_sizes,
+#'                           xs = xs)
+#' plot_cumulative_assignment(results, batch_sizes)
 #'
 #' @export
 plot_cumulative_assignment <- function(
