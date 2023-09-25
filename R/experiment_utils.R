@@ -422,7 +422,10 @@ generate_bandit_data <- function(X=NULL,
 #' signal_strength <- 1.0  # Signal strength multiplier
 #' seed <- 123           # Seed for reproducibility
 #' noise_form <- 'normal'  # Noise form (either 'normal' or 'uniform')
+#' synthetic_data <- simple_tree_data(A = A, K = 4, p = 10, noise_std = 1.0, split = 1.676,
+#'                                    signal_strength = 1.0, seed = 123, noise_form = "normal")
 #'
+#' @export
 simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676,
                              signal_strength=1.0, seed=NULL, noise_form='normal') {
   # Generate covariates and potential outcomes of a synthetic dataset.

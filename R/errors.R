@@ -44,10 +44,3 @@
     stop("gammahats and contextual_probs should have the same shape.")
   }
 }
-
-#' @export
-.check_gammahat <- function(gammahat) {
-  if (!is.matrix(gammahat)) {
-    stop("gammahat should be a matrix.")
-  }
-}
