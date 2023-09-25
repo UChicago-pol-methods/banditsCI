@@ -76,7 +76,7 @@ balwts <- calculate_balwts(results$ws, results$probs)
 plot_cumulative_assignment(results, batch_sizes)
 
 
-aipw_scoresR_learn <- aw_scores(
+aipw_scores_learn <- aw_scores(
   ws = results$ws, 
   yobs = results$yobs, 
   mu_hat = mu_hat, 
@@ -104,7 +104,7 @@ policy1 <- lapply(1:K, function(x) {
 ## estimating the value Q(w) of a single arm w. Here we estimate all the arms in policy1 in turn. 
 out_full <- output_estimates(
   policy1 = policy1, 
-  gammahat = aipw_scoresR_learn, 
+  gammahat = aipw_scores_learn, 
   contextual_probs = results$probs)
 
 # Get estimates for treatment effects of policies as contrast to control \delta(w_1, w_2) = E[Y_t(w_1) - Y_t(w_2)]. In Hadad, Vitor, et al (2021) there are two approaches.
@@ -114,7 +114,7 @@ out_full_te1 <- output_estimates(
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = 'combined',
-  gammahat = aipw_scoresR_learn, 
+  gammahat = aipw_scores_learn, 
   contextual_probs = results$probs)
 
 ## The second approach takes asymptotically normal inference about \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
@@ -122,7 +122,7 @@ out_full_te2 <- output_estimates(
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = 'separate',
-  gammahat = aipw_scoresR_learn, 
+  gammahat = aipw_scores_learn, 
   contextual_probs = results$probs)
 
 
@@ -175,7 +175,7 @@ balwts <- calculate_balwts(results$ws, results$probs)
 plot_cumulative_assignment(results, batch_sizes)
 
 
-aipw_scoresR_learn <- aw_scores(
+aipw_scores_learn <- aw_scores(
   ws = results$ws, 
   yobs = results$yobs, 
   K = ncol(results$ys),
@@ -206,7 +206,7 @@ policy1 <- lapply(1:K, function(x) {
 ## estimating the value Q(w) of a single arm w. Here we estimate all the arms in policy1 in turn. 
 out_full <- output_estimates(
   policy1 = policy1, 
-  gammahat = aipw_scoresR_learn, 
+  gammahat = aipw_scores_learn, 
   contextual_probs = probs)
 
 # Get estimates for treatment effects of policies as contrast to control \delta(w_1, w_2) = E[Y_t(w_1) - Y_t(w_2)]. In Hadad, Vitor, et al (2021) there are two approaches.
@@ -216,7 +216,7 @@ out_full_te1 <- output_estimates(
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = 'combined',
-  gammahat = aipw_scoresR_learn, 
+  gammahat = aipw_scores_learn, 
   contextual_probs = probs)
 
 ## The second approach takes asymptotically normal inference about \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
@@ -224,7 +224,7 @@ out_full_te2 <- output_estimates(
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = 'separate',
-  gammahat = aipw_scoresR_learn, 
+  gammahat = aipw_scores_learn, 
   contextual_probs = probs)
 
 
