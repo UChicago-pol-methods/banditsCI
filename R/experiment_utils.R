@@ -375,6 +375,7 @@ generate_bandit_data <- function(X=NULL,
   ys <- y[shuffler]
   A <- nrow(xs)
   A <- min(A, 20000)
+  .check_A(A)
   xs <- xs[1:A,]
   ys <- ys[1:A]
   K <- length(unique(ys))
@@ -483,6 +484,7 @@ simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676,
 #' @export
 calculate_balwts <- function(ws, probs) {
   A <- length(ws)
+  .check_A(A)
   if (length(dim(probs)) == 2) {
     K <- dim(probs)[2]
     balwts <- matrix(0, nrow = A, ncol = K)
@@ -525,6 +527,7 @@ calculate_mu_hat <- function(results) {
   if (!is.null(results$fitted_bandit_model)) {
     # Contextual Thompson Sampling
     A <- length(results$yobs)
+    .check_A(A)
     K <- results$fitted_bandit_model$K
     mu_hat <- matrix(NA, nrow = A, ncol = K)
     X <- results$xs
@@ -573,6 +576,7 @@ plot_cumulative_assignment <- function(
   # access dataset components
   ws <- results$ws
   A <- length(ws)
+  .check_A(A)
   K <- dim(results$probs)[length(dim(results$probs))]
   batch_size_cumsum <- cumsum(batch_sizes)
 

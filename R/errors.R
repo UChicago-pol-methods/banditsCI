@@ -26,3 +26,28 @@
     stop("Error: gammahats and contextual_probs must have a length greater than 1.")
   }
 }
+
+#' @export
+.check_shape <- function(gammahat, contextual_probs) {
+  if (!is.matrix(gammahat) || !is.matrix(contextual_probs)) {
+    stop("Both gammahats and contextual_probs should be matrices.")
+  }
+
+  shape_gammahats <- dim(gammahat)
+  shape_contextual_probs <- dim(contextual_probs)
+
+  if (length(shape_gammahat) != 2 || length(shape_contextual_probs) != 2) {
+    stop("Both gammahats and contextual_probs should have two dimensions.")
+  }
+
+  if (any(shape_gammahat != shape_contextual_probs)) {
+    stop("gammahats and contextual_probs should have the same shape.")
+  }
+}
+
+#' @export
+.check_gammahat <- function(gammahat) {
+  if (!is.matrix(gammahat)) {
+    stop("gammahat should be a matrix.")
+  }
+}
