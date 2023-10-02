@@ -32,6 +32,18 @@ aw_scores <- function(yobs, ws, balwts, K, mu_hat=NULL) {
   # OUTPUT
   #     - scores: AIPW scores, shape [A, K]
 
+  # Input Check
+  if (!is.numeric(yobs)) stop("yobs should be a numeric vector.")
+  if (length(yobs) != length(ws)) stop("Lengths of yobs and ws should be equal.")
+  if (!is.numeric(K) || (K != as.integer(K)) || K <= 0) stop("K should be a positive integer.")
+  if (!is.matrix(balwts) || nrow(balwts) != length(yobs) || ncol(balwts) != K)
+    stop("balwts should be a numeric matrix of shape [length(yobs), K].")
+
+  if (!is.null(mu_hat)) {
+    if (!is.matrix(mu_hat) || any(dim(mu_hat) != c(length(yobs), K)))
+      stop("mu_hat should be a numeric matrix of shape [length(yobs), K].")
+  }
+
   expand <- function(mat, indices, ncol) {
     output <- matrix(0, nrow(mat), ncol)
     for (i in 1:nrow(mat)) {
@@ -73,6 +85,12 @@ aw_estimate <- function(scores, policy, evalwts=NULL){
   #     - evalwts: non-contextual adaptive weights h_i, shape [A]
   # OUTPUT
   #     - estimated policy value.
+
+  # Input Check
+  if (!is.matrix(scores)) stop("scores should be a numeric matrix.")
+  if (!is.matrix(policy) || any(dim(policy) != dim(scores)))
+    stop("policy should be a numeric matrix with the same shape as scores.")
+
   if(is.null(evalwts)){
     evalwts <- matrix(1, ncol = ncol(scores), nrow = nrow(scores))
   }
@@ -114,6 +132,12 @@ aw_var <- function(scores, estimate, policy, evalwts=NULL){
   #   __________________________________________________________________________
   #                       (sum[i=0 to A] h[i])^2
 
+  # Input Check
+  if (!is.matrix(scores)) stop("scores should be a numeric matrix.")
+  if (!is.numeric(estimate) || length(estimate) != 1) stop("estimate should be a numeric scalar.")
+  if (!is.matrix(policy) || any(dim(policy) != dim(scores)))
+    stop("policy should be a numeric matrix with the same shape as scores.")
+
   if(is.null(evalwts)){
     evalwts <- matrix(1, ncol = ncol(scores))
   }
@@ -151,6 +175,16 @@ estimate <- function(w, gammahat, policy){
   #
   # OUTPUT
   #     - vector (estimate, var)
+
+  # Input Check
+  if (!is.numeric(w)) stop("w should be a numeric vector.")
+  if (!is.matrix(gammahat)) stop("gammahat should be a numeric matrix.")
+  if (!is.matrix(policy)) stop("policy should be a numeric matrix.")
+  if (any(dim(gammahat) != dim(policy)))
+    stop("gammahat and policy should have the same shape.")
+  if (length(w) != nrow(gammahat) || length(w) != nrow(policy))
+    stop("Length of w should be equal to the number of rows in gammahat and policy.")
+
   estimate <- aw_estimate(gammahat, policy, w)
   var <- aw_var(gammahat, estimate, policy, w)
 
@@ -195,6 +229,16 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
   #
   # OUTPUT:
   #   - vector (estimate, var)
+
+  # Input Check
+  if (!is.matrix(h) || nrow(h) != ncol(h)) stop("h should be a square numeric matrix.")
+  if (!is.matrix(gammahat)) stop("gammahat should be a numeric matrix.")
+  if (!is.matrix(policy)) stop("policy should be a numeric matrix.")
+  if (any(dim(gammahat) != dim(policy)))
+    stop("gammahat and policy should have the same shape.")
+  if (nrow(h) != nrow(gammahat) || nrow(h) != nrow(policy))
+    stop("Number of rows in h should be equal to the number of rows in gammahat and policy.")
+
   A <- dim(h)[1]
   Z <- colSums(h)  # size (A) \sum_{s=1}^A h_s(X_i)
   gamma_policy <- rowSums(gammahat * policy)
@@ -271,6 +315,12 @@ output_estimates <- function(policy0 = NULL,
   # contextual_minvar: logical, estimate contextual minvar weights
   # non_contextual_stablevar: logical, estimate non-contextual stablevar weights
   # contextual_stablevar: logical, estimate contextual stablevar weights
+
+  # Input Check
+  if (!is.null(policy0) && !is.matrix(policy0)) stop("policy0 must be a matrix or NULL")
+  if (!is.character(contrasts) || !(contrasts %in% c('combined', 'separate'))) stop("contrasts must be either 'combined' or 'separate'")
+  if (!is.matrix(gammahat)) stop("gammahat must be a matrix")
+  if (!is.logical(uniform) || !is.logical(non_contextual_minvar) || !is.logical(contextual_minvar) || !is.logical(non_contextual_stablevar) || !is.logical(contextual_stablevar) || !is.logical(non_contextual_twopoint)) stop("The logical flags must be logical values")
 
   A <- nrow(gammahat)
   K <- ncol(gammahat)
@@ -441,6 +491,11 @@ stick_breaking <- function(Z){
   #   Z: input array of shape [A, K]
   # Output
   #   weights: stick_breaking weights of shape [A, K]
+
+  # Input Check
+  if (!is.matrix(Z) && !is.array(Z)) stop("Input Z must be a matrix or an array")
+  if (!is.numeric(Z)) stop("Elements of Z must be numeric")
+
   A <- dim(Z)[1]
   K <- dim(Z)[2]
   weights <- array(0, dim = c(A, K))
@@ -469,6 +524,10 @@ stick_breaking <- function(Z){
 #'
 #' @export
 ifelse_clip <- function(lamb, x, y) {
+  # Input Check
+  if(!is.numeric(lamb)) stop("lamb must be a numeric vector")
+  if(!is.numeric(x) || length(x) != 1) stop("x must be a numeric value")
+
   ifelse(lamb <= x,  x, ifelse(lamb >= y, y, lamb))
 }
 
@@ -487,6 +546,9 @@ ifelse_clip <- function(lamb, x, y) {
 #'
 #' @export
 twopoint_stable_var_ratio <- function(A, e, alpha){
+  # Input Check
+  if(!is.numeric(A) || length(A) != 1 || A <= 0) stop("A must be a positive numeric value")
+
   a <-  c(length(A+1), 1)
   # bad arm, e small
   # this rearranging of the formula in the paper seems to be slightly more

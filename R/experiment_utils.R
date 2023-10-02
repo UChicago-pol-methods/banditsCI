@@ -22,6 +22,14 @@ LinTSModel <- function(K,
                        num_mc=100,
                        is_contextual = TRUE
 ) {
+  # Input checks
+  if (!is.logical(is_contextual)) stop("is_contextual must be a logical value.")
+  if (!is.numeric(K) || (K != as.integer(K)) || K <= 0) stop("K must be a positive integer.")
+  if (is_contextual && (!is.numeric(p) || (p != as.integer(p)) || p <= 0)) stop("p must be a positive integer.")
+  if (!is.numeric(floor_start) || floor_start <= 0) stop("floor_start must be a positive number.")
+  if (!is.numeric(floor_decay) || floor_decay <= 0) stop("floor_decay must be a positive number.")
+  if (!is.numeric(num_mc) || (num_mc != as.integer(num_mc)) || num_mc <= 0) stop("num_mc must be a positive integer.")
+
   model <- list()
   model$num_mc <- num_mc
   model$K <- K
@@ -68,6 +76,14 @@ update_thompson <- function(
     ps = NULL,
     balanced = NULL
 ) {
+  # Input Check
+  if(!is.vector(yobs) || !is.numeric(yobs)) stop("yobs must be a numeric vector.")
+  if(length(ws) != length(yobs)) stop("Lengths of ws and yobs must be the same.")
+  if(!is.list(model) || is.null(model$K) || is.null(model$is_contextual)) stop("Invalid model.")
+  if(!is.null(xs) && (!is.matrix(xs) || ncol(xs) != model$p)) stop("xs must be a matrix with the number of columns equal to model$p.")
+  if(!is.null(ps) && (!is.matrix(ps) || any(ps < 0) || any(ps > 1))) stop("ps must be a matrix of probabilities, i.e., values between 0 and 1.")
+  if(!is.null(balanced) && !is.logical(balanced)) stop("balanced must be a logical value.")
+
   for (w in 1:model$K) {
     if (!is.null(xs)) { # contextual
       model$X[[w]] <- rbind(model$X[[w]], cbind(xs[ws == w,,drop = FALSE]))
@@ -156,6 +172,15 @@ draw_thompson <- function(
     end,
     xs = NULL
 ) {
+  # Input Check
+  if(!is.numeric(start) || (start != as.integer(start)) || start <= 0) stop("start must be a positive integer.")
+  if(!is.numeric(end) || (end != as.integer(end)) || end < start) stop("end must be an integer and should be greater than or equal to start.")
+  if(!is.null(xs)) {
+    if(!is.matrix(xs)) stop("xs must be a matrix.")
+    if(is.null(model$p) || (ncol(xs) != model$p)) stop("The number of columns in xs must be equal to model$p.")
+  }
+  if(!is.logical(model$is_contextual)) stop("model$is_contextual must be a logical value.")
+
   floor <- min(model$floor_start / (model$floor_decay * start), 1/model$K)
 
   if(!is.null(xs)){
@@ -236,13 +261,22 @@ run_experiment <- function(
   # INPUT:
   # - xs: covariate X_t of shape [A, p]
   # - ys: potential outcomes of shape [A, K]
-  # OUTPUT:
+
+  # Input Check
+  if(!is.matrix(ys) || ncol(ys) < 2) stop("ys should be a matrix with at least two columns.")
+  A <- dim(ys)[1] # A: the number of observations
+  K <- dim(ys)[2] # K: the number of arms
+  if(!is.numeric(floor_start) || floor_start <= 0) stop("floor_start should be a positive numeric value.")
+  if(!is.numeric(floor_decay) || floor_decay <= 0 || floor_decay > 1) stop("floor_decay should be a positive numeric value between 0 and 1.")
+  if(!is.numeric(batch_sizes) || any(batch_sizes <= 0) || any(floor(batch_sizes) != batch_sizes)) stop("batch_sizes should be a vector of positive integers.")
+  if(sum(batch_sizes) != A) stop("The total of batch_sizes should equal the number of observations in ys.")
+  if(!is.null(xs)) {
+    if(!is.matrix(xs) || dim(xs)[1] != A) stop("xs should be NULL or a matrix with the same number of rows as ys.")
+  }
+  if(!is.null(balanced) && !is.logical(balanced)) stop("balanced should be NULL or a boolean value.")
 
   .check_first_batch(batch_sizes, ys)
 
-  # - pulled arms, observed rewards, assignment probabilities
-  A <- dim(ys)[1] # A: the number of observations
-  K <- dim(ys)[2] # K: the number of arms
   ws <- numeric(A) # the index of the selected arm. The ws array is a 1-dimensional array.
   yobs <- numeric(A)
 
@@ -333,6 +367,11 @@ impose_floor <- function(
     a,
     amin
 ) {
+  # Input Check
+  if(!is.numeric(a) || length(a) == 0) stop("a should be a non-empty numeric vector.")
+  if(!is.numeric(amin) || length(amin) != 1) stop("amin should be a single numeric value.")
+  if(all(a < amin)) stop("All elements of a are below amin; this could lead to incorrect results. Please ensure that at least one element of a is equal to or greater than amin.")
+
   new <- pmax(a, amin)
   total_slack <- sum(new) - 1
   individual_slack <- new - amin
@@ -362,6 +401,14 @@ generate_bandit_data <- function(X=NULL,
                                  y=NULL,
                                  noise_std=1.0,
                                  signal_strength=1.0) {
+  # Input checks
+  if(!is.numeric(noise_std) || length(noise_std) != 1 || noise_std < 0) stop("noise_std should be a single non-negative numeric value.")
+  if(!is.numeric(signal_strength) || length(signal_strength) != 1) stop("signal_strength should be a single numeric value.")
+
+  # If X and y are provided, check the compatibility
+  if(!is.null(X) && !is.null(y) && nrow(X) != length(y)) stop("Number of rows in X must be equal to the length of y.")
+
+
   # Generate covariates and potential outcomes from a classification dataset.
 
   if(is.null(X)){
@@ -431,6 +478,12 @@ simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676,
                              signal_strength=1.0, seed=NULL, noise_form='normal') {
   # Generate covariates and potential outcomes of a synthetic dataset.
 
+  # Input Check
+  if(!is.numeric(noise_std) || noise_std < 0) stop("noise_std should be a non-negative numeric value.")
+  if(!is.numeric(split)) stop("split should be a numeric value.")
+  if(!is.numeric(signal_strength)) stop("signal_strength should be a numeric value.")
+  if(!is.character(noise_form) || !noise_form %in% c('normal', 'uniform')) stop("noise_form should be either 'normal' or 'uniform'.")
+
   stopifnot(p >= 2) # to check the input parameters satisfy certain conditions
   stopifnot(K >= 4)
   stopifnot(split >= 0)
@@ -487,6 +540,12 @@ simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676,
 #'
 #' @export
 calculate_balwts <- function(ws, probs) {
+
+  # Input Check
+  if(!is.numeric(ws) || is.null(ws)) stop("ws should be a non-null numeric vector.")
+  if(!is.numeric(probs) || is.null(probs)) stop("probs should be a non-null numeric matrix or array.")
+  if(length(ws) != dim(probs)[1]) stop("The length of ws must match the first dimension of probs.")
+
   A <- length(ws)
   .check_A(A)
   if (length(dim(probs)) == 2) {
@@ -528,6 +587,13 @@ calculate_balwts <- function(ws, probs) {
 #'
 #' @export
 calculate_mu_hat <- function(results) {
+
+  # Input Check
+  if(!is.list(results)) stop("results must be a list")
+  if(!("fitted_bandit_model" %in% names(results))) stop("results must contain 'fitted_bandit_model'")
+  if(!("yobs" %in% names(results))) stop("results must contain 'yobs'")
+  if(!("xs" %in% names(results))) stop("results must contain 'xs'")
+
   if (!is.null(results$fitted_bandit_model)) {
     # Contextual Thompson Sampling
     A <- length(results$yobs)
@@ -576,6 +642,12 @@ plot_cumulative_assignment <- function(
   # - batch_sizes: batch sizes used in the experiment
   # OUTPUT:
   # - plot of cumulative assignment graph
+
+  # Input Check
+  if(!is.list(results)) stop("results should be a list.")
+  if(!all(c("ws", "probs") %in% names(results))) stop("results should contain ws and probs.")
+  if(!is.numeric(batch_sizes) || any(batch_sizes <= 0) || any(batch_sizes != round(batch_sizes)))
+    stop("batch_sizes should be a vector of positive integers.")
 
   # access dataset components
   ws <- results$ws
