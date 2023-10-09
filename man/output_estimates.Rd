@@ -58,9 +58,28 @@ policy <- matrix(c(0.2, 0.3, 0.5,
                    0.4, 0.5, 0.1,
                    0.2, 0.7, 0.1), ncol = 3)
 gammahat <- scores - policy
-policy1 <- matrix(runif(4*3), ncol = 3)
-policy0 <- matrix(runif(4*3), ncol = 3)
-contextual_probs <- array(runif(4 * 3), dim = c( 4, 3))
+
+# Ensure the rows of policy1 sum to 1
+temp_policy1 <- matrix(runif(4*3), ncol = 3)
+policy1 <- list(temp_policy1 / rowSums(temp_policy1))
+
+# Ensure the rows of policy0 sum to 1
+temp_policy0 <- matrix(runif(4*3), ncol = 3)
+policy0 <- temp_policy0 / rowSums(temp_policy0)
+
+contextual_probs <- array(0, dim = c(4, 4, 3))
+for (i in 1:4) {
+  temp_vector <- runif(3)
+  normalized_vector <- temp_vector / sum(temp_vector)
+  contextual_probs[i, 1, ] <- normalized_vector
+  }
+  for (k in 1:3) {
+    for (i in 1:4) {
+    temp_vector <- runif(3)
+    normalized_vector <- temp_vector / sum(temp_vector)
+    contextual_probs[i, 2:4, k] <- normalized_vector
+      }
+   }
 estimates <- output_estimates(policy1 = policy1,
                               policy0 = policy0,
                               gammahat = gammahat,
