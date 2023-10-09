@@ -24,11 +24,16 @@ LinTSModel <- function(K,
 ) {
   # Input checks
   if (!is.logical(is_contextual)) stop("is_contextual must be a logical value.")
-  if (!is.numeric(K) || (K != as.integer(K)) || K <= 0) stop("K must be a positive integer.")
-  if (is_contextual && (!is.numeric(p) || (p != as.integer(p)) || p <= 0)) stop("p must be a positive integer.")
-  if (!is.numeric(floor_start) || floor_start <= 0) stop("floor_start must be a positive number.")
-  if (!is.numeric(floor_decay) || floor_decay <= 0) stop("floor_decay must be a positive number.")
-  if (!is.numeric(num_mc) || (num_mc != as.integer(num_mc)) || num_mc <= 0) stop("num_mc must be a positive integer.")
+  if (is.na(is_contextual)) stop("is_contextual should not be NA.")
+  if (!is.numeric(K) || (K != as.integer(K)) || K <= 0 || is.na(K)) stop("K must be a positive integer.")
+  if (is_contextual) {
+    if (!is.numeric(p) || (p != as.integer(p)) || p <= 0 || is.na(p)) stop("p must be a positive integer when is_contextual is TRUE.")
+  } else if (!is.null(p)) {
+    warning("p is ignored when is_contextual is set to FALSE.")
+  }
+  if (!is.numeric(floor_start) || floor_start <= 0 || is.na(floor_start)) stop("floor_start must be a positive number.")
+  if (!is.numeric(floor_decay) || floor_decay <= 0 || floor_decay > 1 || is.na(floor_decay)) stop("floor_decay should be a positive numeric value between 0 and 1.")
+  if (!is.numeric(num_mc) || (num_mc != as.integer(num_mc)) || num_mc <= 0 || is.na(num_mc)) stop("num_mc must be a positive integer.")
 
   model <- list()
   model$num_mc <- num_mc
@@ -77,12 +82,12 @@ update_thompson <- function(
     balanced = NULL
 ) {
   # Input Check
-  if(!is.vector(yobs) || !is.numeric(yobs)) stop("yobs must be a numeric vector.")
-  if(length(ws) != length(yobs)) stop("Lengths of ws and yobs must be the same.")
+  if(!is.vector(yobs) || !is.numeric(yobs) || any(is.na(yobs))) stop("yobs must be a numeric vector without NA values.")
+  if(!is.vector(ws) || length(ws) != length(yobs) || any(is.na(ws))) stop("Lengths of ws and yobs must be the same, and ws should not contain NA values.")
   if(!is.list(model) || is.null(model$K) || is.null(model$is_contextual)) stop("Invalid model.")
-  if(!is.null(xs) && (!is.matrix(xs) || ncol(xs) != model$p)) stop("xs must be a matrix with the number of columns equal to model$p.")
-  if(!is.null(ps) && (!is.matrix(ps) || any(ps < 0) || any(ps > 1))) stop("ps must be a matrix of probabilities, i.e., values between 0 and 1.")
-  if(!is.null(balanced) && !is.logical(balanced)) stop("balanced must be a logical value.")
+  if(!is.null(xs) && (!is.matrix(xs) || ncol(xs) != model$p || any(is.na(xs)))) stop("xs must be a matrix with the number of columns equal to model$p and no NA values.")
+  if(!is.null(ps) && (!is.matrix(ps) || any(ps < 0) || any(ps > 1) || any(is.na(ps)))) stop("ps must be a matrix of probabilities, i.e., values between 0 and 1 without NA values.")
+  if(!is.null(balanced) && (!is.logical(balanced) || any(is.na(balanced)))) stop("balanced must be a logical value without NA values.")
 
   for (w in 1:model$K) {
     if (!is.null(xs)) { # contextual
@@ -173,13 +178,16 @@ draw_thompson <- function(
     xs = NULL
 ) {
   # Input Check
-  if(!is.numeric(start) || (start != as.integer(start)) || start <= 0) stop("start must be a positive integer.")
-  if(!is.numeric(end) || (end != as.integer(end)) || end < start) stop("end must be an integer and should be greater than or equal to start.")
+  if(!is.list(model)) stop("model must be a list.")
+  if(!is.numeric(start) || (start != as.integer(start)) || start <= 0 || is.na(start)) stop("start must be a positive integer without NA values.")
+  if(!is.numeric(end) || (end != as.integer(end)) || end < start || is.na(end)) stop("end must be an integer without NA values, and should be greater than or equal to start.")
   if(!is.null(xs)) {
-    if(!is.matrix(xs)) stop("xs must be a matrix.")
+    if(!is.matrix(xs) || any(is.na(xs))) stop("xs must be a matrix without NA values.")
     if(is.null(model$p) || (ncol(xs) != model$p)) stop("The number of columns in xs must be equal to model$p.")
   }
-  if(!is.logical(model$is_contextual)) stop("model$is_contextual must be a logical value.")
+  if(is.null(model$K)) stop("model should have a K field indicating the number of arms.")
+  if(!is.logical(model$is_contextual) || is.na(model$is_contextual)) stop("model$is_contextual must be a logical value without NA values.")
+  if(is.null(model$num_mc) || !is.numeric(model$num_mc) || (model$num_mc != as.integer(model$num_mc)) || model$num_mc <= 0 || is.na(model$num_mc)) stop("model$num_mc must be a positive integer without NA values.")
 
   floor <- min(model$floor_start / (model$floor_decay * start), 1/model$K)
 
@@ -263,17 +271,18 @@ run_experiment <- function(
   # - ys: potential outcomes of shape [A, K]
 
   # Input Check
-  if(!is.matrix(ys) || ncol(ys) < 2) stop("ys should be a matrix with at least two columns.")
+  if(!is.matrix(ys) || ncol(ys) < 2 || any(is.na(ys))) stop("ys should be a matrix with at least two columns and should not contain NA values.")
   A <- dim(ys)[1] # A: the number of observations
   K <- dim(ys)[2] # K: the number of arms
-  if(!is.numeric(floor_start) || floor_start <= 0) stop("floor_start should be a positive numeric value.")
-  if(!is.numeric(floor_decay) || floor_decay <= 0 || floor_decay > 1) stop("floor_decay should be a positive numeric value between 0 and 1.")
-  if(!is.numeric(batch_sizes) || any(batch_sizes <= 0) || any(floor(batch_sizes) != batch_sizes)) stop("batch_sizes should be a vector of positive integers.")
+
+  if(!is.numeric(floor_start) || floor_start <= 0 || is.na(floor_start)) stop("floor_start should be a positive numeric value without NA values.")
+  if(!is.numeric(floor_decay) || floor_decay <= 0 || floor_decay > 1 || is.na(floor_decay)) stop("floor_decay should be a positive numeric value between 0 and 1 without NA values.")
+  if(!is.numeric(batch_sizes) || any(batch_sizes <= 0) || any(floor(batch_sizes) != batch_sizes) || any(is.na(batch_sizes))) stop("batch_sizes should be a vector of positive integers without NA values.")
   if(sum(batch_sizes) != A) stop("The total of batch_sizes should equal the number of observations in ys.")
   if(!is.null(xs)) {
-    if(!is.matrix(xs) || dim(xs)[1] != A) stop("xs should be NULL or a matrix with the same number of rows as ys.")
+    if(!is.matrix(xs) || dim(xs)[1] != A || any(is.na(xs))) stop("xs should be NULL or a matrix with the same number of rows as ys and should not contain NA values.")
   }
-  if(!is.null(balanced) && !is.logical(balanced)) stop("balanced should be NULL or a boolean value.")
+  if(!is.null(balanced) && (!is.logical(balanced) || is.na(balanced))) stop("balanced should be NULL or a boolean value without NA values.")
 
   .check_first_batch(batch_sizes, ys)
 
@@ -368,8 +377,9 @@ impose_floor <- function(
     amin
 ) {
   # Input Check
-  if(!is.numeric(a) || length(a) == 0) stop("a should be a non-empty numeric vector.")
-  if(!is.numeric(amin) || length(amin) != 1) stop("amin should be a single numeric value.")
+  if(!is.numeric(a) || length(a) == 0 || any(is.na(a))) stop("a should be a non-empty numeric vector without NA values.")
+  if(!is.numeric(amin) || length(amin) != 1 || is.na(amin)) stop("amin should be a single numeric value without NA values.")
+  if(amin < 0 || amin > 1) stop("amin should be between 0 and 1.")
   if(all(a < amin)) stop("All elements of a are below amin; this could lead to incorrect results. Please ensure that at least one element of a is equal to or greater than amin.")
 
   new <- pmax(a, amin)
@@ -402,12 +412,13 @@ generate_bandit_data <- function(X=NULL,
                                  noise_std=1.0,
                                  signal_strength=1.0) {
   # Input checks
-  if(!is.numeric(noise_std) || length(noise_std) != 1 || noise_std < 0) stop("noise_std should be a single non-negative numeric value.")
-  if(!is.numeric(signal_strength) || length(signal_strength) != 1) stop("signal_strength should be a single numeric value.")
-
-  # If X and y are provided, check the compatibility
-  if(!is.null(X) && !is.null(y) && nrow(X) != length(y)) stop("Number of rows in X must be equal to the length of y.")
-
+  if(!is.numeric(noise_std) || length(noise_std) != 1 || noise_std < 0 || is.na(noise_std)) stop("noise_std should be a single non-negative numeric value without NA values.")
+  if(!is.numeric(signal_strength) || length(signal_strength) != 1 || is.na(signal_strength)) stop("signal_strength should be a single numeric value without NA values.")
+  if(!is.null(X) && !is.null(y)) {
+    if(nrow(X) != length(y)) stop("Number of rows in X must be equal to the length of y.")
+    if(any(is.na(X))) stop("X should not contain NA values.")
+    if(any(is.na(y))) stop("y should not contain NA values.")
+  }
 
   # Generate covariates and potential outcomes from a classification dataset.
 
@@ -435,7 +446,6 @@ generate_bandit_data <- function(X=NULL,
   data <- list(xs=xs, ys=ys, muxs=muxs, A=A, p=ncol(xs), K=K)
   return(list(data = data, mus = mus))
 }
-
 
 #' simple_tree_data function
 #'
@@ -483,6 +493,7 @@ simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676,
   if(!is.numeric(split)) stop("split should be a numeric value.")
   if(!is.numeric(signal_strength)) stop("signal_strength should be a numeric value.")
   if(!is.character(noise_form) || !noise_form %in% c('normal', 'uniform')) stop("noise_form should be either 'normal' or 'uniform'.")
+  if(is.na(noise_std) || is.na(split) || is.na(signal_strength) || (is.integer(seed) && is.na(seed)) || is.na(noise_form)) stop("Inputs should not contain NA values.")
 
   stopifnot(p >= 2) # to check the input parameters satisfy certain conditions
   stopifnot(K >= 4)
@@ -542,9 +553,10 @@ simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676,
 calculate_balwts <- function(ws, probs) {
 
   # Input Check
-  if(!is.numeric(ws) || is.null(ws)) stop("ws should be a non-null numeric vector.")
-  if(!is.numeric(probs) || is.null(probs)) stop("probs should be a non-null numeric matrix or array.")
+  if(!is.numeric(ws) || is.null(ws) || any(is.na(ws))) stop("ws should be a non-null numeric vector without NAs.")
+  if(!is.numeric(probs) || is.null(probs) || any(is.na(probs))) stop("probs should be a non-null numeric matrix or array without NAs.")
   if(length(ws) != dim(probs)[1]) stop("The length of ws must match the first dimension of probs.")
+  if(any(probs <= 0) || any(probs > 1)) stop("Values in probs must be between 0 (exclusive) and 1 (inclusive).")
 
   A <- length(ws)
   .check_A(A)
@@ -590,9 +602,12 @@ calculate_mu_hat <- function(results) {
 
   # Input Check
   if(!is.list(results)) stop("results must be a list")
-  if(!("fitted_bandit_model" %in% names(results))) stop("results must contain 'fitted_bandit_model'")
-  if(!("yobs" %in% names(results))) stop("results must contain 'yobs'")
-  if(!("xs" %in% names(results))) stop("results must contain 'xs'")
+  if(!("fitted_bandit_model" %in% names(results)) || is.null(results$fitted_bandit_model)) stop("results must contain a non-null 'fitted_bandit_model'")
+  if(!("yobs" %in% names(results)) || is.null(results$yobs) || !is.numeric(results$yobs) || any(is.na(results$yobs))) stop("results must contain a non-null numeric 'yobs' vector without NAs")
+  if(!("xs" %in% names(results)) || is.null(results$xs) || !is.matrix(results$xs) || any(is.na(results$xs))) stop("results must contain a non-null matrix 'xs' without NAs")
+
+  if(!is.numeric(results$fitted_bandit_model$K)) stop("'K' in 'fitted_bandit_model' must be a numeric value.")
+  if(!is.matrix(results$fitted_bandit_model$mu) || any(is.na(results$fitted_bandit_model$mu))) stop("'mu' in 'fitted_bandit_model' should be a matrix without NAs")
 
   if (!is.null(results$fitted_bandit_model)) {
     # Contextual Thompson Sampling
@@ -642,6 +657,8 @@ plot_cumulative_assignment <- function(
   # - batch_sizes: batch sizes used in the experiment
   # OUTPUT:
   # - plot of cumulative assignment graph
+  ws <- results$ws
+  A <- length(ws)
 
   # Input Check
   if(!is.list(results)) stop("results should be a list.")
@@ -650,8 +667,6 @@ plot_cumulative_assignment <- function(
     stop("batch_sizes should be a vector of positive integers.")
 
   # access dataset components
-  ws <- results$ws
-  A <- length(ws)
   .check_A(A)
   K <- dim(results$probs)[length(dim(results$probs))]
   batch_size_cumsum <- cumsum(batch_sizes)

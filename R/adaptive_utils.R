@@ -33,16 +33,17 @@ aw_scores <- function(yobs, ws, balwts, K, mu_hat=NULL) {
   #     - scores: AIPW scores, shape [A, K]
 
   # Input Check
-  if (!is.numeric(yobs)) stop("yobs should be a numeric vector.")
+  if (!is.numeric(yobs) || any(is.na(yobs))) stop("yobs should be a numeric vector without NAs.")
   if (length(yobs) != length(ws)) stop("Lengths of yobs and ws should be equal.")
   if (!is.numeric(K) || (K != as.integer(K)) || K <= 0) stop("K should be a positive integer.")
-  if (!is.matrix(balwts) || nrow(balwts) != length(yobs) || ncol(balwts) != K)
-    stop("balwts should be a numeric matrix of shape [length(yobs), K].")
+  if (!is.matrix(balwts) || nrow(balwts) != length(yobs) || ncol(balwts) != K || any(is.na(balwts)))
+    stop("balwts should be a numeric matrix of shape [length(yobs), K] without NAs.")
 
   if (!is.null(mu_hat)) {
-    if (!is.matrix(mu_hat) || any(dim(mu_hat) != c(length(yobs), K)))
-      stop("mu_hat should be a numeric matrix of shape [length(yobs), K].")
+    if (!is.matrix(mu_hat) || any(dim(mu_hat) != c(length(yobs), K)) || any(is.na(mu_hat)))
+      stop("mu_hat should be a numeric matrix of shape [length(yobs), K] without NAs.")
   }
+
 
   expand <- function(mat, indices, ncol) {
     output <- matrix(0, nrow(mat), ncol)
@@ -87,9 +88,9 @@ aw_estimate <- function(scores, policy, evalwts=NULL){
   #     - estimated policy value.
 
   # Input Check
-  if (!is.matrix(scores)) stop("scores should be a numeric matrix.")
-  if (!is.matrix(policy) || any(dim(policy) != dim(scores)))
-    stop("policy should be a numeric matrix with the same shape as scores.")
+  if (!is.matrix(scores) || any(is.na(scores))) stop("scores should be a numeric matrix without NAs.")
+  if (!is.matrix(policy) || any(dim(policy) != dim(scores)) || any(is.na(policy)))
+    stop("policy should be a numeric matrix with the same shape as scores and without NAs.")
 
   if(is.null(evalwts)){
     evalwts <- matrix(1, ncol = ncol(scores), nrow = nrow(scores))
@@ -133,10 +134,10 @@ aw_var <- function(scores, estimate, policy, evalwts=NULL){
   #                       (sum[i=0 to A] h[i])^2
 
   # Input Check
-  if (!is.matrix(scores)) stop("scores should be a numeric matrix.")
+  if (!is.matrix(scores) || any(is.na(scores))) stop("scores should be a numeric matrix without NAs.")
   if (!is.numeric(estimate) || length(estimate) != 1) stop("estimate should be a numeric scalar.")
-  if (!is.matrix(policy) || any(dim(policy) != dim(scores)))
-    stop("policy should be a numeric matrix with the same shape as scores.")
+  if (!is.matrix(policy) || any(dim(policy) != dim(scores)) || any(is.na(policy)))
+    stop("policy should be a numeric matrix with the same shape as scores and without NAs.")
 
   if(is.null(evalwts)){
     evalwts <- matrix(1, ncol = ncol(scores))
@@ -177,9 +178,9 @@ estimate <- function(w, gammahat, policy){
   #     - vector (estimate, var)
 
   # Input Check
-  if (!is.numeric(w)) stop("w should be a numeric vector.")
-  if (!is.matrix(gammahat)) stop("gammahat should be a numeric matrix.")
-  if (!is.matrix(policy)) stop("policy should be a numeric matrix.")
+  if (!is.numeric(w) || any(is.na(w)) ) stop("w should be a numeric vector without NAs.")
+  if (!is.matrix(gammahat) || any(is.na(gammahat))) stop("gammahat should be a numeric matrix without NAs.")
+  if (!is.matrix(policy) || any(is.na(policy))) stop("policy should be a numeric matrix without NAs.")
   if (any(dim(gammahat) != dim(policy)))
     stop("gammahat and policy should have the same shape.")
   if (length(w) != nrow(gammahat) || length(w) != nrow(policy))
@@ -231,9 +232,9 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
   #   - vector (estimate, var)
 
   # Input Check
-  if (!is.matrix(h) || nrow(h) != ncol(h)) stop("h should be a square numeric matrix.")
-  if (!is.matrix(gammahat)) stop("gammahat should be a numeric matrix.")
-  if (!is.matrix(policy)) stop("policy should be a numeric matrix.")
+  if (!is.matrix(h) || nrow(h) != ncol(h) || any(is.na(h))) stop("h should be a square numeric matrix without NAs.")
+  if (!is.matrix(gammahat) || any(is.na(gammahat))) stop("gammahat should be a numeric matrix without NAs.")
+  if (!is.matrix(policy) || any(is.na(policy))) stop("policy should be a numeric matrix without NAs.")
   if (any(dim(gammahat) != dim(policy)))
     stop("gammahat and policy should have the same shape.")
   if (nrow(h) != nrow(gammahat) || nrow(h) != nrow(policy))
@@ -284,7 +285,7 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #'                    0.4, 0.5, 0.1,
 #'                    0.2, 0.7, 0.1), ncol = 3)
 #' gammahat <- scores - policy
-#' policy1 <- matrix(runif(4*3), ncol = 3)
+#' policy1 <- list(matrix(runif(4*3), ncol = 3))
 #' policy0 <- matrix(runif(4*3), ncol = 3)
 #' contextual_probs <- array(runif(4 * 3), dim = c( 4, 3))
 #' estimates <- output_estimates(policy1 = policy1,
@@ -317,10 +318,11 @@ output_estimates <- function(policy0 = NULL,
   # contextual_stablevar: logical, estimate contextual stablevar weights
 
   # Input Check
-  if (!is.null(policy0) && !is.matrix(policy0)) stop("policy0 must be a matrix or NULL")
+  if (!is.null(policy0) && (!is.matrix(policy0) || any(is.na(policy0)))) stop("policy0 must be a matrix without NAs or NULL.")
   if (!is.character(contrasts) || !(contrasts %in% c('combined', 'separate'))) stop("contrasts must be either 'combined' or 'separate'")
-  if (!is.matrix(gammahat)) stop("gammahat must be a matrix")
-  if (!is.logical(uniform) || !is.logical(non_contextual_minvar) || !is.logical(contextual_minvar) || !is.logical(non_contextual_stablevar) || !is.logical(contextual_stablevar) || !is.logical(non_contextual_twopoint)) stop("The logical flags must be logical values")
+  if (!is.matrix(gammahat) || any(is.na(gammahat))) stop("gammahat must be a matrix without NAs.")
+  if (!is.array(contextual_probs) || any(is.na(contextual_probs))) stop("contextual_probs must be an array without NAs.")
+  if (!is.logical(uniform) || !is.logical(non_contextual_minvar) || !is.logical(contextual_minvar) || !is.logical(non_contextual_stablevar) || !is.logical(contextual_stablevar) || !is.logical(non_contextual_twopoint)) stop("The logical flags must be logical values.")
 
   A <- nrow(gammahat)
   K <- ncol(gammahat)
