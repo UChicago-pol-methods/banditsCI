@@ -576,53 +576,6 @@ calculate_balwts <- function(ws, probs) {
   return(balwts)
 }
 
-#' calculate_mu_hat Function
-#'
-#' The calculate_mu_hat function calculates the estimated expected value of the reward for each arm, given the results of a bandit model.
-#'
-#' @param results a list containing the results of a bandit model, including the fitted model and the covariate matrix xs
-#'
-#' @return A vector containing the estimated expected value of the reward for each arm
-#'
-#' @examples
-#' A <- 200
-#' K <- p <- 3
-#' xs <- matrix(runif(A * p), nrow = A, ncol = p)
-#' ys <- matrix(rbinom(A * K, 1, 0.5), nrow = A, ncol = K)
-#' batch_sizes <- c(100,100)
-#' results <- run_experiment(ys = ys,
-#'                           floor_start = 5,
-#'                           floor_decay = 0.9,
-#'                           batch_sizes = batch_sizes,
-#'                           xs = xs)
-#' mu_hat <- calculate_mu_hat(results)
-#'
-#' @export
-calculate_mu_hat <- function(results) {
-
-  # Input Check
-  if(!is.list(results)) stop("results must be a list")
-  if(!("fitted_bandit_model" %in% names(results)) || is.null(results$fitted_bandit_model)) stop("results must contain a non-null 'fitted_bandit_model'")
-  if(!("yobs" %in% names(results)) || is.null(results$yobs) || !is.numeric(results$yobs) || any(is.na(results$yobs))) stop("results must contain a non-null numeric 'yobs' vector without NAs")
-  if(!("xs" %in% names(results)) || is.null(results$xs) || !is.matrix(results$xs) || any(is.na(results$xs))) stop("results must contain a non-null matrix 'xs' without NAs")
-
-  if(!is.numeric(results$fitted_bandit_model$K)) stop("'K' in 'fitted_bandit_model' must be a numeric value.")
-  if(!is.matrix(results$fitted_bandit_model$mu) || any(is.na(results$fitted_bandit_model$mu))) stop("'mu' in 'fitted_bandit_model' should be a matrix without NAs")
-
-  if (!is.null(results$fitted_bandit_model)) {
-    # Contextual Thompson Sampling
-    A <- length(results$yobs)
-    .check_A(A)
-    K <- results$fitted_bandit_model$K
-    mu_hat <- matrix(NA, nrow = A, ncol = K)
-    X <- results$xs
-    for(w in 1:results$fitted_bandit_model$K){
-      coefhat <- results$fitted_bandit_model$mu[w,]
-      mu_hat[,w] <- cbind(1, X) %*% coefhat
-    }
-    return(mu_hat)
-  }
-}
 
 #' plot_cumulative_assignment Function
 #'

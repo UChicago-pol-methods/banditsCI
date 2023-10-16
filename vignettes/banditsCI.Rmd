@@ -67,8 +67,16 @@ ys <- data[[1]]$ys
 results <- run_experiment(ys, floor_start, floor_decay, batch_sizes, xs)
 
 # conditional means model
-# mu_hat <- calculate_mu_hat(results)
-mu_hat <- ridge_muhat_lfo_pai(xs=xs, ws=results$ws, yobs=results$yobs, K=K, batch_sizes=batch_sizes)
+mu_hat <- ridge_muhat_lfo_pai(xs=xs, 
+                              ws=results$ws, 
+                              yobs=results$yobs, 
+                              K=K, 
+                              batch_sizes=batch_sizes)
+
+mu_hat2d <- mu_hat[1,,]
+for(i in 1:nrow(mu_hat2d)){
+  mu_hat2d[i,] <- mu_hat[i,i,]
+}
 
 # inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
 balwts <- calculate_balwts(results$ws, results$probs)
@@ -77,10 +85,10 @@ balwts <- calculate_balwts(results$ws, results$probs)
 plot_cumulative_assignment(results, batch_sizes)
 
 
-aipw_scores_learn <- aw_scores(
+aipw_scores <- aw_scores(
   ws = results$ws, 
   yobs = results$yobs, 
-  mu_hat = mu_hat[A,,], 
+  mu_hat = mu_hat2d, 
   K = ncol(results$ys),
   balwts = balwts)
 
@@ -105,7 +113,7 @@ policy1 <- lapply(1:K, function(x) {
 ## estimating the value Q(w) of a single arm w. Here we estimate all the arms in policy1 in turn. 
 out_full <- output_estimates(
   policy1 = policy1, 
-  gammahat = aipw_scores_learn, 
+  gammahat = aipw_scores, 
   contextual_probs = results$probs)
 
 # Get estimates for treatment effects of policies as contrast to control \delta(w_1, w_2) = E[Y_t(w_1) - Y_t(w_2)]. In Hadad, Vitor, et al (2021) there are two approaches.
@@ -115,7 +123,7 @@ out_full_te1 <- output_estimates(
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = 'combined',
-  gammahat = aipw_scores_learn, 
+  gammahat = aipw_scores, 
   contextual_probs = results$probs)
 
 ## The second approach takes asymptotically normal inference about \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
@@ -123,7 +131,7 @@ out_full_te2 <- output_estimates(
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = 'separate',
-  gammahat = aipw_scores_learn, 
+  gammahat = aipw_scores, 
   contextual_probs = results$probs)
 
 
@@ -176,7 +184,7 @@ balwts <- calculate_balwts(results$ws, results$probs)
 plot_cumulative_assignment(results, batch_sizes)
 
 
-aipw_scores_learn <- aw_scores(
+aipw_scores <- aw_scores(
   ws = results$ws, 
   yobs = results$yobs, 
   K = ncol(results$ys),
@@ -207,7 +215,7 @@ policy1 <- lapply(1:K, function(x) {
 ## estimating the value Q(w) of a single arm w. Here we estimate all the arms in policy1 in turn. 
 out_full <- output_estimates(
   policy1 = policy1, 
-  gammahat = aipw_scores_learn, 
+  gammahat = aipw_scores, 
   contextual_probs = probs)
 
 # Get estimates for treatment effects of policies as contrast to control \delta(w_1, w_2) = E[Y_t(w_1) - Y_t(w_2)]. In Hadad, Vitor, et al (2021) there are two approaches.
@@ -217,7 +225,7 @@ out_full_te1 <- output_estimates(
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = 'combined',
-  gammahat = aipw_scores_learn, 
+  gammahat = aipw_scores, 
   contextual_probs = probs)
 
 ## The second approach takes asymptotically normal inference about \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
@@ -225,7 +233,7 @@ out_full_te2 <- output_estimates(
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = 'separate',
-  gammahat = aipw_scores_learn, 
+  gammahat = aipw_scores, 
   contextual_probs = probs)
 
 
