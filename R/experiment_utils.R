@@ -679,3 +679,134 @@ plot_cumulative_assignment <- function(
   graphics::legend("topleft", legend = 1:K, col=1:K, lty=1:K)
 }
 
+# Estimating the expected rewards of different arms using ridge regression
+
+#' Ridge Regression Initialization for Arm Expected Rewards
+#'
+#' Initializes matrices needed for ridge regression to estimate the expected rewards of different arms.
+#'
+#' @param p Number of covariates.
+#' @param K Number of arms.
+#'
+#' @return A list containing initialized matrices `R_A`, `R_Ainv`, `b`, and `theta` for each arm.
+#' @export
+ridge_init <- function(p, K){
+  # Initializes matrices needed for ridge regression.
+
+  # Inputs:
+  #
+  #   p: Number of covariates.
+  #   K: Number of arms.
+  # Output:
+  #   Initialized matrices R_A, R_Ainv, b, and theta for each arm.
+
+  #Input check
+  if (!is.numeric(p) || length(p) != 1 || p <= 0) stop("p should be a positive numeric value.")
+  if (!is.numeric(K) || length(K) != 1 || K <= 0) stop("K should be a positive numeric value.")
+
+  R_A <- vector("list", K)
+  R_Ainv <- vector("list", K)
+  for (k in 1:K){
+    R_A[[k]] <- diag(p+1)
+    R_Ainv[[k]] <- diag(p+1)
+  }
+  b <- matrix(0, nrow=K, ncol=p+1)
+  theta <- matrix(0, nrow=K, ncol=p+1)
+  return(list(R_A = R_A, R_Ainv = R_Ainv, b = b, theta = theta))
+}
+
+#' Ridge Regression Update for Arm Expected Rewards
+#'
+#' Given previous matrices and a new observation, updates the matrices for ridge regression.
+#'
+#' @param R_A The current matrix A for an arm.
+#' @param b The current vector b for an arm.
+#' @param xs Matrix of observed covariates.
+#' @param t The current time or instance.
+#' @param yobs The observed outcome for the current observation.
+#' @param alpha The ridge regression regularization parameter (default is 1).
+#'
+#' @return A list containing updated matrices `R_A`, `R_Ainv`, `b`, and `theta`.
+#' @export
+ridge_update <- function(R_A, b, xs, t, yobs, alpha){
+  # Given previous matrices and a new observation, it updates the matrices for ridge regression.
+
+  # Inputs:
+  #
+  #   A: The current matrix A for an arm.
+  #   b: The current vector b for an arm.
+  #   xs: The covariates.
+  #   ytobs: The observed outcome for the current observation.
+  # Output:
+  #   Updated matrices A, Ainv, b, and theta.
+
+  xt <- xs[t,]
+  xt1 <- c(1, xt)
+  R_A <- R_A + xt1 %*% t(xt1) + alpha * diag(length(xt1))
+  b <- b + yobs * xt1
+  R_Ainv <- solve(R_A)
+  theta <- R_Ainv %*% b
+  return(list(R_A = R_A, R_Ainv = R_Ainv, b = b, theta = theta))
+}
+
+#' Plug-in Estimates for Arm Expected Rewards Using Ridge Regression
+#'
+#' Computes plug-in estimates of arm expected rewards based on provided data.
+#'
+#' @param xs Matrix of observed covariates of shape [A, p].
+#' @param ws Vector of pulled arm indices at each time `t` of shape [A].
+#' @param yobs Vector of observed outcomes of shape [A].
+#' @param K Number of arms.
+#' @param batch_sizes Vector indicating sizes of batches in which data is processed.
+#' @param alpha The ridge regression regularization parameter (default is 1).
+#'
+#' @return A 3D array containing the expected reward estimates for each arm and each time `t`, of shape [A, A, K].
+#' @export
+ridge_muhat_lfo_pai <- function(xs, ws, yobs, K, batch_sizes, alpha=1){
+  # Return plug-in estimates of arm expected reward.
+
+  # Inputs:
+  #
+  #   xs: The observed covariates, X_t, of shape [A, p].
+  #   ws: The pulled arm indices at each time t, of shape [A].
+  #   yobs: The observed outcomes, of shape [A].
+  #   K: The number of arms.
+  #   batch_sizes: The sizes of batches in which data is processed.
+  #   alpha: The ridge regression regularization parameter.
+  # Output:
+  #
+  #   muhat: The expected reward estimates for each arm and each time t, of shape [A, A, K].
+  if (!is.matrix(xs) || ncol(xs) <= 0) stop("xs should be a matrix with more than 0 columns.")
+  if (length(ws) != nrow(xs) || length(yobs) != nrow(xs)) stop("Lengths of ws and yobs should match the number of rows in xs.")
+
+  A <- nrow(xs)
+  p <- ncol(xs)
+  result <- ridge_init(p, K)
+  R_A <- result$R_A
+  R_Ainv <- result$R_Ainv
+  b <- result$b
+  theta <- result$theta
+  muhat <- array(0, dim=c(A, A, K))
+
+  batch_cumsum <- c(0, cumsum(batch_sizes))
+
+  for (idx in 1:(length(batch_cumsum)-1)){
+    l <- batch_cumsum[idx] + 1
+    r <- batch_cumsum[idx + 1]
+    xt1 <- matrix(0, nrow=p+1, ncol=A)
+    xt1[1,] <- 1
+    xt1[2:(p+1),] <- t(xs)
+    for (w in 1:K){
+      muhat[l:r,,w] <- t(theta[w,]) %*% xt1
+    }
+    for (t in l:r){
+      w <- ws[t]
+      result <- ridge_update(R_A[[w]], b[w,], xs, t, yobs[t], alpha)
+      R_A[[w]] <- result$R_A
+      R_Ainv[[w]] <- result$R_Ainv
+      b[w,] <- result$b
+      theta[w,] <- result$theta
+    }
+  }
+  return(muhat)
+}

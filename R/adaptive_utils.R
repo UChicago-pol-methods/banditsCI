@@ -338,6 +338,8 @@ output_estimates <- function(policy0 = NULL,
 
   # Input Check
   if (!is.null(policy0) && (!is.matrix(policy0) || any(is.na(policy0)))) stop("policy0 must be a matrix without NAs or NULL.")
+#  if (!all(abs(rowSums(policy0) - 1) < 1e-8)) stop("Rows of policy0 must sum to 1.")
+#  if (!all(abs(rowSums(policy1[[1]]) -1)< 1e-8)) stop("Rows of policy1 must sum to 1.")
   if (!is.character(contrasts) || !(contrasts %in% c('combined', 'separate'))) stop("contrasts must be either 'combined' or 'separate'")
   if (!is.matrix(gammahat) || any(is.na(gammahat))) stop("gammahat must be a matrix without NAs.")
   if (!is.array(contextual_probs) || any(is.na(contextual_probs))) stop("contextual_probs must be an array without NAs.")

@@ -19,6 +19,9 @@ This project is a R package contains a set of functions designed for bandit-base
 - **run_experiment**: Conducts a bandit experiment using the Linear Thompson Sampling model.
 - **generate_bandit_data**: Simulates bandit experiment data.
 - **simple_tree_data**: Generates synthetic data with a simple decision tree.
+- **ridge_init**: Ridge Regression Initialization for Arm Expected Rewards.
+- **ridge_update**: Ridge Regression Update for Arm Expected Rewards.
+- **ridge_muhat_lfo_pai**: Plug-in Estimates for Arm Expected Rewards Using Ridge Regression.
 
 ## Policy Evaluation
 

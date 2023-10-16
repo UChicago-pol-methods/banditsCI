@@ -67,7 +67,8 @@ ys <- data[[1]]$ys
 results <- run_experiment(ys, floor_start, floor_decay, batch_sizes, xs)
 
 # conditional means model
-mu_hat <- calculate_mu_hat(results)
+# mu_hat <- calculate_mu_hat(results)
+mu_hat <- ridge_muhat_lfo_pai(xs=xs, ws=results$ws, yobs=results$yobs, K=K, batch_sizes=batch_sizes)
 
 # inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
 balwts <- calculate_balwts(results$ws, results$probs)
@@ -79,7 +80,7 @@ plot_cumulative_assignment(results, batch_sizes)
 aipw_scores_learn <- aw_scores(
   ws = results$ws, 
   yobs = results$yobs, 
-  mu_hat = mu_hat, 
+  mu_hat = mu_hat[A,,], 
   K = ncol(results$ys),
   balwts = balwts)
 
