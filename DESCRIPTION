@@ -4,7 +4,7 @@ Version: 0.1.0
 Author: First Last <email@example.com>
 Maintainer: First Last <email@example.com>
 Description: This project is a R package contains a set of functions designed for bandit-based experiments, policy evaluation, adaptive weighting schemes, and more.
-License: GPL-3
+License: GPL-3 + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.2.3
 Suggests: 
