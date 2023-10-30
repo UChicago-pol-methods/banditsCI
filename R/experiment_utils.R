@@ -627,7 +627,10 @@ plot_cumulative_assignment <- function(
   dat <- matrix(0, nrow = A, ncol = K)
   dat[cbind(1:A, ws)] <- 1
   dat <- apply(dat, 2, cumsum)
-  graphics::matplot(dat, type = c("l"), col =1:K)
+  graphics::matplot(dat, type = c("l"), col =1:K,
+                    xlab = "Observations",
+                    ylab = "Cumulative assignment",
+                    main = "Overall assignment")
   graphics::abline(v=batch_size_cumsum, col="#00ccff")
   graphics::legend("topleft", legend = 1:K, col=1:K, lty=1:K)
 }
