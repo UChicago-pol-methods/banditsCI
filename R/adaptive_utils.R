@@ -311,6 +311,42 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #'                               policy0 = policy0,
 #'                               gammahat = gammahat,
 #'                               contextual_probs = contextual_probs)
+#' plot
+#' plot_results_baseR <- function(result) {
+#'   estimates <- result[, "estimate"]
+#'   std_errors <- result[, "std.error"]
+#'   labels <- rownames(result)
+#'
+#'   # Define the limits for the x-axis based on estimates and std_errors
+#'   xlims <- c(min(estimates - std_errors), max(estimates + std_errors))
+#'
+#'   # Create the basic error bar plot using base R
+#'   invisible(
+#'     plot(estimates, 1:length(estimates), xlim=xlims, xaxt="n", xlab="Coefficient Estimate", ylab="",
+#'          yaxt="n", pch=16, las=1, main="Coefficients and CIs")
+#'   )
+#'
+#'   # Add y-axis labels
+#'   invisible(
+#'     axis(2, at=1:length(estimates), labels=labels, las=1, tick=FALSE, line=0.5)
+#'   )
+#'
+#'   # Add the x-axis values
+#'   x_ticks <- seq(from=xlims[1], to=xlims[2], by=0.1)
+#'   invisible(
+#'     axis(1, at=x_ticks[x_ticks > max(estimates + std_errors) | x_ticks < min(estimates - std_errors)],
+#'          labels=x_ticks[x_ticks > max(estimates + std_errors) | x_ticks < min(estimates - std_errors)])
+#'   )
+#'
+#'   # Add error bars
+#'   invisible(
+#'     segments(estimates - std_errors, 1:length(estimates), estimates + std_errors, 1:length(estimates))
+#'   )
+#' }
+#'
+#' sample_result <- estimates[[1]]
+#' par(mar=c(5, 12, 4, 2))
+#' plot_results_baseR(sample_result)
 #'
 output_estimates <- function(policy0 = NULL,
                              policy1,

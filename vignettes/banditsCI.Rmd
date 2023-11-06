@@ -16,7 +16,6 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(banditsCI)
-library(ggplot2)
 set.seed(123)
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", 
                "#D55E00", "#CC79A7")
@@ -94,7 +93,7 @@ aipw_scores <- aw_scores(
 
 ```
 
-```{r estimation}
+```{r estimation, fig.width=10, fig.height=6}
 # Get estimates for policies
 
 ## Define counterfactual policies
@@ -157,20 +156,51 @@ combinedMatrix$method <- rep(values, length.out = nrow(combinedMatrix))
 
 
 # Create the plot
-plot <- ggplot(combinedMatrix, aes(x = estimate, y = method)) +
-  geom_point(aes(x = estimate), size = 2, position = position_dodge(width=0.5)) +
-  geom_errorbar(aes(xmin = estimate - 1.96*std.error, xmax = estimate + 1.96*std.error), width = 0.05, 
-                position = position_dodge(width=0.5)) +
-  xlab("Coefficient Estimate") +
-  ylab("weights") +
-  ggtitle("Coefficients and Confidence Intervals") +
-  facet_wrap(~ arm, ncol = 2)
+# Define a function for plotting each arm
+plot_arm <- function(arm_data, arm_name) {
+  # Sort the methods for consistent ordering
+  arm_data <- arm_data[order(arm_data$method), ]
+  
+  # Number of methods
+  n_methods <- nrow(arm_data)
+  
+  # Set the y-axis limits
+  ylim <- c(1, n_methods)
+  
+  # Set the x-axis limits (adding some padding)
+  xlim <- range(c(arm_data$estimate - 1.96*arm_data$std.error, 
+                 arm_data$estimate + 1.96*arm_data$std.error))
+  xlim <- xlim + c(-0.1*diff(xlim), 0.1*diff(xlim))
+  
+  # Create an empty plot
+  plot(1, 1, xlim = xlim, ylim = ylim, type = "n", 
+       xlab = "Coefficient Estimate", ylab = "",
+       main = paste("Coefficients and Confidence Intervals (", arm_name, ")", sep = ""),
+       yaxt = "n")  # suppress y-axis ticks/labels
+  
+  # Add points for each method
+  points(arm_data$estimate, 1:n_methods, pch = 19, cex = 1.5)
+  
+  # Add error bars
+  arrows(arm_data$estimate - 1.96*arm_data$std.error, 1:n_methods, 
+         arm_data$estimate + 1.96*arm_data$std.error, 1:n_methods, 
+         angle = 90, code = 3, length = 0.1)
+  
+  # Add method labels on the y-axis
+  axis(2, at = 1:n_methods, labels = arm_data$method, las = 1)
+}
 
-# Print the plot
-print(plot)
+# Set up a plotting layout with 2 columns
+unique_arms <- unique(combinedMatrix$arm)
+n_arms <- length(unique_arms)
+par(mfrow = c(ceiling(n_arms/2), 2), mar = c(5, 12, 4, 4))
+
+# Plot each arm
+for(arm_name in unique_arms) {
+  arm_data <- combinedMatrix[combinedMatrix$arm == arm_name, ]
+  plot_arm(arm_data, arm_name)
+}
 ```
-
-
 ## For the non-contextual case
 
 We run a non-contextual experiment. 
@@ -192,7 +222,7 @@ aipw_scores <- aw_scores(
 
 ```
 
-```{r estimation_nc}
+```{r estimation_nc, fig.width=10, fig.height=6}
 # get two-dimensional probabilities
 # TODO explain what's going on with probabilities
 # TODO what happens with contextual variances when there's 2d probs/
@@ -257,17 +287,50 @@ values <- c("uniform", "non_contextual_minvar", "contextual_minvar",
             "non_contextual_stablevar", "contextual_stablevar", "non_contextual_twopoint")
 combinedMatrix$method <- rep(values, length.out = nrow(combinedMatrix))
 
-
 # Create the plot
-plot <- ggplot(combinedMatrix, aes(x = estimate, y = method)) +
-  geom_point(aes(x = estimate), size = 2, position = position_dodge(width=0.5)) +
-  geom_errorbar(aes(xmin = estimate - 1.96*std.error, xmax = estimate + 1.96*std.error), width = 0.05, 
-                position = position_dodge(width=0.5)) +
-  xlab("Coefficient Estimate") +
-  ylab("weights") +
-  ggtitle("Coefficients and Confidence Intervals") +
-  facet_wrap(~ arm, ncol = 2)
+# Define a function for plotting each arm
+plot_arm <- function(arm_data, arm_name) {
+  # Sort the methods for consistent ordering
+  arm_data <- arm_data[order(arm_data$method), ]
+  
+  # Number of methods
+  n_methods <- nrow(arm_data)
+  
+  # Set the y-axis limits
+  ylim <- c(1, n_methods)
+  
+  # Set the x-axis limits (adding some padding)
+  xlim <- range(c(arm_data$estimate - 1.96*arm_data$std.error, 
+                 arm_data$estimate + 1.96*arm_data$std.error))
+  xlim <- xlim + c(-0.1*diff(xlim), 0.1*diff(xlim))
+  
+  # Create an empty plot
+  plot(1, 1, xlim = xlim, ylim = ylim, type = "n", 
+       xlab = "Coefficient Estimate", ylab = "",
+       main = paste("Coefficients and Confidence Intervals (", arm_name, ")", sep = ""),
+       yaxt = "n")  # suppress y-axis ticks/labels
+  
+  # Add points for each method
+  points(arm_data$estimate, 1:n_methods, pch = 19, cex = 1.5)
+  
+  # Add error bars
+  arrows(arm_data$estimate - 1.96*arm_data$std.error, 1:n_methods, 
+         arm_data$estimate + 1.96*arm_data$std.error, 1:n_methods, 
+         angle = 90, code = 3, length = 0.1)
+  
+  # Add method labels on the y-axis
+  axis(2, at = 1:n_methods, labels = arm_data$method, las = 1)
+}
 
-# Print the plot
-print(plot)
+# Set up a plotting layout with 2 columns
+unique_arms <- unique(combinedMatrix$arm)
+n_arms <- length(unique_arms)
+par(mfrow = c(ceiling(n_arms/2), 2), mar = c(5, 12, 4, 4))
+
+# Plot each arm
+for(arm_name in unique_arms) {
+  arm_data <- combinedMatrix[combinedMatrix$arm == arm_name, ]
+  plot_arm(arm_data, arm_name)
+}
 ```
+
