@@ -63,7 +63,7 @@ xs <- data[[1]]$xs
 ys <- data[[1]]$ys
 results <- run_experiment(ys = ys, 
                           floor_start = 0.9, 
-                          floor_decay = 0.99, 
+                          floor_decay = 0.05, 
                           batch_sizes = batch_sizes, 
                           xs = xs)
 
@@ -110,7 +110,7 @@ for(k in 1:K){
 We then generate augmented inverse probability weighted (AIPW) scores, using a
 conditional means model and known assignment probabilities. 
 Here, the conditional means are estimated from a ridge model, which estimates 
-response for each observation based only on batchwise history, using the 
+conditional means for each observation based only on batchwise history, using the 
 `ridge_muhat_lfo_pai()` function. 
 Other conditional means models can also be used. 
 ```{r contextual_means_estimation}
@@ -166,7 +166,8 @@ policy1 <- lapply(1:K, function(x) {
 out_full <- output_estimates(
   policy1 = policy1, 
   gammahat = aipw_scores, 
-  contextual_probs = results$probs)
+  probs_array = results$probs,
+  floor_decay = 0.05)
 ```
 
 We first look at estimates of mean response under each of the treatment arms. 
@@ -225,7 +226,8 @@ out_full_te1 <- output_estimates(
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = "combined",
   gammahat = aipw_scores, 
-  contextual_probs = results$probs)
+  probs_array = results$probs,
+  floor_decay = 0.05)
 
 ## The second approach takes asymptotically normal inference about 
 ## \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
@@ -234,7 +236,8 @@ out_full_te2 <- output_estimates(
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = "separate",
   gammahat = aipw_scores, 
-  contextual_probs = results$probs)
+  probs_array = results$probs,
+  floor_decay = 0.05)
 ```
 
 Under the first approach, we calculate AIPW scores under both treatment(s) and 
@@ -364,7 +367,8 @@ policy1 <- lapply(1:K, function(x) {
 out_full <- output_estimates(
   policy1 = policy1, 
   gammahat = aipw_scores, 
-  contextual_probs = results$probs)
+  probs_array = results$probs,
+  floor_decay = 0.05)
 ```
 
 We first look at estimates of mean response under each of the treatment arms.
@@ -422,7 +426,8 @@ out_full_te1 <- output_estimates(
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = "combined",
   gammahat = aipw_scores, 
-  contextual_probs = results$probs)
+  probs_array = results$probs,
+  floor_decay = 0.05)
 
 ## The second approach takes asymptotically normal inference about 
 ## \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
@@ -431,7 +436,8 @@ out_full_te2 <- output_estimates(
   policy1 = policy1[-1],  ## remove the control arm from policy1
   contrasts = "separate",
   gammahat = aipw_scores, 
-  contextual_probs = results$probs)
+  probs_array = results$probs,
+  floor_decay = 0.05)
 ```
 
 First take the difference in AIPW scores, and then conduct adaptive 

@@ -8,14 +8,16 @@ License: GPL-3 + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.2.3
 Suggests: 
-    knitr,
-    rmarkdown,
+    knitr (>= 1.43),
+    rmarkdown (>= 2.23),
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Imports:
     glmnet (>= 4.1-6),
     MASS (>= 7.3-56),
-    mvtnorm (>= 1.2-2)
+    mvtnorm (>= 1.2-2),
+    Rdpack (>= 2.6)
+RdMacros: Rdpack 
 Collate:
   'experiment_utils.R'
   'adaptive_utils.R'
