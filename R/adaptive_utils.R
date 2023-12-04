@@ -265,12 +265,12 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #' For observations indexed \eqn{t \in \{1,\dots,A\}}, treatments \eqn{w \in \{1,\dots,K\}}, we denote as \eqn{Y_t(w)} the potential outcome for the unit at time \eqn{t} under treatment \eqn{w}.
 #' A policy \eqn{\pi} is a treatment assignment procedure that is the subject of evaluation, described in terms of treatment assignment probabilities for each subject to receive each counterfactual treatment.
 #' We target estimation of average response under a specified policy:
-#'\deqn{Q(\pi) \coloneqq \sum_{w = 1}^{K}\textrm{E}\left[\pi(w)Y_t(w)\right]}
+#'\deqn{Q(\pi) := \sum_{w = 1}^{K}\textrm{E}\left[\pi(w)Y_t(w)\right]}
 #' The user may specify a list of list of policies to be evaluated, under \code{policy1}.
 #'\cr
 #'\cr
 #' Alternatively, they may estimate policy contrasts if \code{policy0} is provided:
-#'\deqn{\Delta(\pi^1,\pi^2) \coloneqq Q(\pi^1) − Q(\pi^2) }
+#'\deqn{\Delta(\pi^1,\pi^2) := Q(\pi^1) - Q(\pi^2) }
 #'
 #' @param policy0 A single policy probability matrix for contrast evaluation with dimensions \code{A * K}. Each row represents treatment assignment probabilities for an individual subject, and so rows must sum to 1. When \code{policy0 = NULL}, the function estimates the value \eqn{Q(\pi)} of each policy matrix listed in \code{policy1}. When \code{policy0} is non-null, the function estimates differences in average response under each of the component policies in \code{policy1} and the \emph{single} policy in \code{policy0}.
 #' @param policy1 A list of counterfactual policy matrices for evaluation with dimensions \code{A * K}. Each row represents treatment assignment probabilities for an individual subject, and so rows must sum to 1.
@@ -301,7 +301,6 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #'                     0, 1, 0,
 #'                     0, 1, 0,
 #'                     0, 1, 0), ncol = 3, byrow = TRUE)
-#' gammahat <- scores - policy
 #'
 #' # Ensure the rows of policy1 sum to 1
 #' temp_policy1 <- matrix(runif(4*3), ncol = 3)

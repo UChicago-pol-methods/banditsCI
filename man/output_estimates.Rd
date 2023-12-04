@@ -54,12 +54,12 @@ We briefly outline the target quantities:
 For observations indexed \eqn{t \in \{1,\dots,A\}}, treatments \eqn{w \in \{1,\dots,K\}}, we denote as \eqn{Y_t(w)} the potential outcome for the unit at time \eqn{t} under treatment \eqn{w}.
 A policy \eqn{\pi} is a treatment assignment procedure that is the subject of evaluation, described in terms of treatment assignment probabilities for each subject to receive each counterfactual treatment.
 We target estimation of average response under a specified policy:
-\deqn{Q(\pi) \coloneqq \sum_{w = 1}^{K}\textrm{E}\left[\pi(w)Y_t(w)\right]}
+\deqn{Q(\pi) := \sum_{w = 1}^{K}\textrm{E}\left[\pi(w)Y_t(w)\right]}
 The user may specify a list of list of policies to be evaluated, under \code{policy1}.
 \cr
 \cr
 Alternatively, they may estimate policy contrasts if \code{policy0} is provided:
-\deqn{\Delta(\pi^1,\pi^2) \coloneqq Q(\pi^1) − Q(\pi^2) }
+\deqn{\Delta(\pi^1,\pi^2) := Q(\pi^1) - Q(\pi^2) }
 }
 \examples{
 # In a non-contextual setting, generate example values for policy1, gammahat, and probs_array
@@ -75,7 +75,6 @@ policy1 <- matrix(c(0, 1, 0,
                     0, 1, 0,
                     0, 1, 0,
                     0, 1, 0), ncol = 3, byrow = TRUE)
-gammahat <- scores - policy
 
 # Ensure the rows of policy1 sum to 1
 temp_policy1 <- matrix(runif(4*3), ncol = 3)
