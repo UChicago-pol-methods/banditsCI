@@ -21,6 +21,7 @@
 #'           mu_hat = matrix(c(0.5, 0.8, 0.6, 0.3, 0.9, 0.2, 0.5, 0.7, 0.4, 0.8, 0.2, 0.6), ncol = 3))
 #'
 #' @export
+#' @import Rdpack
 aw_scores <- function(yobs, ws, balwts, K, mu_hat=NULL) {
   # Compute AIPW/doubly robust scores. Return IPW scores if muhat is NULL.
   # INPUT
@@ -283,9 +284,11 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #' @param non_contextual_stablevar Logical, estimate non-contextual \code{StableVar} weights described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.
 #' @param contextual_stablevar Logical, estimate contextual \code{StableVar} weights  described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.
 #' @param non_contextual_twopoint Logical, estimate \code{two-point} allocation weights described in \insertCite{hadad2021confidence;textual}{banditsCI} Section 2.
+#' @param floor_decay A numeric value representing the floor decay parameter in the calculation. Default is 0.
 #'
 #' @return A list of treatment effect estimates under different weighting schemes.
-#' @export
+#' @references \insertRef{hadad2021confidence}{banditsCI}
+#' @references \insertRef{zhan2021off}{banditsCI}
 #'
 #' @examples
 #' # In a non-contextual setting, generate example values for policy1, gammahat, and probs_array
@@ -364,10 +367,7 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #' par(mar=c(5, 12, 4, 2))
 #' plot_results_baseR(sample_result)
 #'
-#' @references
-#' \insertRef{hadad2021confidence}{banditsCI}
-#'
-#' \insertRef{zhan2021off}{banditsCI}
+#' @export
 output_estimates <- function(policy0 = NULL,
                              policy1,
                              contrasts = 'combined',

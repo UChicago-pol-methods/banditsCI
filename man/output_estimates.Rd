@@ -41,6 +41,8 @@ output_estimates(
 \item{contextual_stablevar}{Logical, estimate contextual \code{StableVar} weights  described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.}
 
 \item{non_contextual_twopoint}{Logical, estimate \code{two-point} allocation weights described in \insertCite{hadad2021confidence;textual}{banditsCI} Section 2.}
+
+\item{floor_decay}{A numeric value representing the floor decay parameter in the calculation. Default is 0.}
 }
 \value{
 A list of treatment effect estimates under different weighting schemes.
