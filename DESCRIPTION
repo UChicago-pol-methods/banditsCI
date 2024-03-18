@@ -1,8 +1,8 @@
 Package: banditsCI
 Title: banditsCI
 Version: 0.1.0
-Author: First Last <email@example.com>
-Maintainer: First Last <email@example.com>
+Author: Molly Offer-Westort <mollyow@uchicago.edu> and Yinghui Zhou <yz4690@columbia.edu>
+Maintainer: Molly Offer-Westort <mollyow@uchicago.edu>
 Description: This project is a R package contains a set of functions designed for bandit-based experiments, policy evaluation, adaptive weighting schemes, and more.
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
@@ -23,3 +23,4 @@ Collate:
   'adaptive_utils.R'
   'errors.R'
 VignetteBuilder: knitr
+Depends: R (>= 3.5.0)
