@@ -97,11 +97,12 @@ for(k in 1:K){
   dat[cbind(1:sum(idx), results$ws[idx])] <- 1
   dat <- apply(dat, 2, cumsum)
   graphics::matplot(dat, type = c("l"), col =1:K, 
+                    lwd = 2,
                     xlab = "Observations",
                     ylab = "Cumulative assignment",
-                    main = paste0("Assignment for arm", k))
+                    main = paste0("Assignment for arm ", k))
   graphics::abline(v=cumsum(batch_sizes_w), col="#00ccff")
-  graphics::legend("topleft", legend = 1:K, col=1:K, lty=1:K)
+  graphics::legend("topleft", legend = 1:K, col=1:K, lty=1:K, lwd = 2)
   
 }
 ```

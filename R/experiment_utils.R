@@ -206,6 +206,7 @@ draw_thompson <- function(
 
     for (s in 1:nrow(ps)) { # TODO and double check that draws is doing the right thing here
       ps[s, ] <- table(factor(apply(draws[s, , ], 2, which.max), levels = 1:model$K) ) / model$num_mc
+      # TODO: ALGS add top-two thompson sampling function here.
       ps[s, ] <- impose_floor(ps[s, ], floor)
     }
     w <- sapply(1:(end - start + 1), function(t) sample(1:model$K, size=1,
@@ -224,6 +225,7 @@ draw_thompson <- function(
     }
     argmax <- apply(draws, 2, which.max)
     ts_probs <- unname(table(factor(argmax, levels = 1:model$K)) / model$num_mc)
+    # TODO: ALGS add top-two thompson sampling function here.
     ps <- impose_floor(ts_probs, floor)
     w <- sample(1:model$K, size = end - start + 1, prob = ps, replace = TRUE)
   }
@@ -263,7 +265,8 @@ run_experiment <- function(
     floor_decay,
     batch_sizes,
     xs = NULL,
-    balanced = NULL
+    balanced = NULL,
+    regret = "cumulative"# TODO: ALGS default is cumulative, add "simple" option for top two
 ) {
   # Run bandit experiment
   # INPUT:
