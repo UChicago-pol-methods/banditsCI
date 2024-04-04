@@ -21,9 +21,9 @@ test_that("draw_thompson correctly draws arms for a LinTS agent with contextual 
   expect_true(all(result$w <= model$K))
 
   expect_equal(dim(result$ps), c(nrow(xs), model$K))
-  expect_true(all(result$ps >=
-                    min((model$floor_start / (model$floor_decay * start)),
-                        1/model$K)) )
+  expect_true(all(abs(result$ps -
+                        min((model$floor_start / (model$floor_decay * start)),
+                            1/model$K)) < 1e-15))
 })
 
 test_that("draw_thompson correctly draws arms for a non-contextual TS agent", {
@@ -42,8 +42,8 @@ test_that("draw_thompson correctly draws arms for a non-contextual TS agent", {
   expect_true(all(result$w <= model$K))
 
   expect_equal(length(result$ps), model$K)
-  expect_true(all(result$ps >=
+  expect_true(all(abs(result$ps -
                     min((model$floor_start / (model$floor_decay * start)),
-                        1/model$K)))
+                        1/model$K)) < 1e-15))
 
 })

@@ -22,6 +22,19 @@ LinTSModel <- function(K,
                        num_mc=100,
                        is_contextual = TRUE
 ) {
+  # Input checks
+  if (!is.logical(is_contextual)) stop("is_contextual must be a logical value.")
+  if (is.na(is_contextual)) stop("is_contextual should not be NA.")
+  if (!is.numeric(K) || (K != as.integer(K)) || K <= 0 || is.na(K)) stop("K must be a positive integer.")
+  if (is_contextual) {
+    if (!is.numeric(p) || (p != as.integer(p)) || p <= 0 || is.na(p)) stop("p must be a positive integer when is_contextual is TRUE.")
+  } else if (!is.null(p)) {
+    warning("p is ignored when is_contextual is set to FALSE.")
+  }
+  if (!is.numeric(floor_start) || floor_start <= 0 || is.na(floor_start)) stop("floor_start must be a positive number.")
+  if (!is.numeric(floor_decay) || floor_decay <= 0 || floor_decay > 1 || is.na(floor_decay)) stop("floor_decay should be a positive numeric value between 0 and 1.")
+  if (!is.numeric(num_mc) || (num_mc != as.integer(num_mc)) || num_mc <= 0 || is.na(num_mc)) stop("num_mc must be a positive integer.")
+
   model <- list()
   model$num_mc <- num_mc
   model$K <- K
@@ -54,7 +67,10 @@ LinTSModel <- function(K,
 #'
 #' @examples
 #' model <- LinTSModel(K=5, p=3, floor_start=1, floor_decay=0.9, num_mc=100, is_contextual=TRUE)
-#' model <- update_thompson(ws=c(3,2,1), yobs=c(1,0,1), model=model, xs=matrix(rnorm(9), ncol=3))
+#' A <- 1000
+#' ws <- numeric(A)
+#' yobs <- numeric(A)
+#' model <- update_thompson(ws=ws, yobs=yobs, model=model)
 #'
 #' @export
 update_thompson <- function(
@@ -65,6 +81,14 @@ update_thompson <- function(
     ps = NULL,
     balanced = NULL
 ) {
+  # Input Check
+  if(!is.vector(yobs) || !is.numeric(yobs) || any(is.na(yobs))) stop("yobs must be a numeric vector without NA values.")
+  if(!is.vector(ws) || length(ws) != length(yobs) || any(is.na(ws))) stop("Lengths of ws and yobs must be the same, and ws should not contain NA values.")
+  if(!is.list(model) || is.null(model$K) || is.null(model$is_contextual)) stop("Invalid model.")
+  if(!is.null(xs) && (!is.matrix(xs) || ncol(xs) != model$p || any(is.na(xs)))) stop("xs must be a matrix with the number of columns equal to model$p and no NA values.")
+  if(!is.null(ps) && (!is.matrix(ps) || any(ps < 0) || any(ps > 1) || any(is.na(ps)))) stop("ps must be a matrix of probabilities, i.e., values between 0 and 1 without NA values.")
+  if(!is.null(balanced) && (!is.logical(balanced) || any(is.na(balanced)))) stop("balanced must be a logical value without NA values.")
+
   for (w in 1:model$K) {
     if (!is.null(xs)) { # contextual
       model$X[[w]] <- rbind(model$X[[w]], cbind(xs[ws == w,,drop = FALSE]))
@@ -153,6 +177,18 @@ draw_thompson <- function(
     end,
     xs = NULL
 ) {
+  # Input Check
+  if(!is.list(model)) stop("model must be a list.")
+  if(!is.numeric(start) || (start != as.integer(start)) || start <= 0 || is.na(start)) stop("start must be a positive integer without NA values.")
+  if(!is.numeric(end) || (end != as.integer(end)) || end < start || is.na(end)) stop("end must be an integer without NA values, and should be greater than or equal to start.")
+  if(!is.null(xs)) {
+    if(!is.matrix(xs) || any(is.na(xs))) stop("xs must be a matrix without NA values.")
+    if(is.null(model$p) || (ncol(xs) != model$p)) stop("The number of columns in xs must be equal to model$p.")
+  }
+  if(is.null(model$K)) stop("model should have a K field indicating the number of arms.")
+  if(!is.logical(model$is_contextual) || is.na(model$is_contextual)) stop("model$is_contextual must be a logical value without NA values.")
+  if(is.null(model$num_mc) || !is.numeric(model$num_mc) || (model$num_mc != as.integer(model$num_mc)) || model$num_mc <= 0 || is.na(model$num_mc)) stop("model$num_mc must be a positive integer without NA values.")
+
   floor <- min(model$floor_start / (model$floor_decay * start), 1/model$K)
 
   if(!is.null(xs)){
@@ -209,15 +245,16 @@ draw_thompson <- function(
 #' @return A list containing the pulled arms (ws), observed rewards (yobs), assignment probabilities (probs), and the fitted bandit model (fitted_bandit_model)
 #'
 #' @examples
-#' ys <- matrix(rbinom(1000, 1, 0.5), ncol=5)
-#' xs <- matrix(rnorm(300), ncol=3)
-#' batch_sizes <- c(100, 200, 700)
-#' result <- run_experiment(ys=ys,
-#'                           floor_start=1,
-#'                           floor_decay=0.9,
-#'                           batch_sizes=batch_sizes,
-#'                           xs=xs,
-#'                           balanced=TRUE)
+#'A <- 1000
+#'K <- 4
+#'xs <- matrix(runif(A * K), nrow = A, ncol = K)
+#'ys <- matrix(rbinom(A * K, 1, 0.5), nrow = A, ncol = K)
+#'batch_sizes <- c(250, 250, 250, 250)
+#'results <- run_experiment(ys = ys,
+#'                          floor_start = 5,
+#'                          floor_decay = 0.9,
+#'                          batch_sizes = batch_sizes,
+#'                          xs = xs)
 #'
 #' @export
 run_experiment <- function(
@@ -232,13 +269,23 @@ run_experiment <- function(
   # INPUT:
   # - xs: covariate X_t of shape [A, p]
   # - ys: potential outcomes of shape [A, K]
-  # OUTPUT:
+
+  # Input Check
+  if(!is.matrix(ys) || ncol(ys) < 2 || any(is.na(ys))) stop("ys should be a matrix with at least two columns and should not contain NA values.")
+  A <- dim(ys)[1] # A: the number of observations
+  K <- dim(ys)[2] # K: the number of arms
+
+  if(!is.numeric(floor_start) || floor_start <= 0 || is.na(floor_start)) stop("floor_start should be a positive numeric value without NA values.")
+  if(!is.numeric(floor_decay) || floor_decay <= 0 || floor_decay > 1 || is.na(floor_decay)) stop("floor_decay should be a positive numeric value between 0 and 1 without NA values.")
+  if(!is.numeric(batch_sizes) || any(batch_sizes <= 0) || any(floor(batch_sizes) != batch_sizes) || any(is.na(batch_sizes))) stop("batch_sizes should be a vector of positive integers without NA values.")
+  if(sum(batch_sizes) != A) stop("The total of batch_sizes should equal the number of observations in ys.")
+  if(!is.null(xs)) {
+    if(!is.matrix(xs) || dim(xs)[1] != A || any(is.na(xs))) stop("xs should be NULL or a matrix with the same number of rows as ys and should not contain NA values.")
+  }
+  if(!is.null(balanced) && (!is.logical(balanced) || is.na(balanced))) stop("balanced should be NULL or a boolean value without NA values.")
 
   .check_first_batch(batch_sizes, ys)
 
-  # - pulled arms, observed rewards, assignment probabilities
-  A <- dim(ys)[1] # A: the number of observations
-  K <- dim(ys)[2] # K: the number of arms
   ws <- numeric(A) # the index of the selected arm. The ws array is a 1-dimensional array.
   yobs <- numeric(A)
 
@@ -329,6 +376,12 @@ impose_floor <- function(
     a,
     amin
 ) {
+  # Input Check
+  if(!is.numeric(a) || length(a) == 0 || any(is.na(a))) stop("a should be a non-empty numeric vector without NA values.")
+  if(!is.numeric(amin) || length(amin) != 1 || is.na(amin)) stop("amin should be a single numeric value without NA values.")
+  if(amin < 0 || amin > 1) stop("amin should be between 0 and 1.")
+  if(all(a < amin)) stop("All elements of a are below amin; this could lead to incorrect results. Please ensure that at least one element of a is equal to or greater than amin.")
+
   new <- pmax(a, amin)
   total_slack <- sum(new) - 1
   individual_slack <- new - amin
@@ -358,6 +411,15 @@ generate_bandit_data <- function(X=NULL,
                                  y=NULL,
                                  noise_std=1.0,
                                  signal_strength=1.0) {
+  # Input checks
+  if(!is.numeric(noise_std) || length(noise_std) != 1 || noise_std < 0 || is.na(noise_std)) stop("noise_std should be a single non-negative numeric value without NA values.")
+  if(!is.numeric(signal_strength) || length(signal_strength) != 1 || is.na(signal_strength)) stop("signal_strength should be a single numeric value without NA values.")
+  if(!is.null(X) && !is.null(y)) {
+    if(nrow(X) != length(y)) stop("Number of rows in X must be equal to the length of y.")
+    if(any(is.na(X))) stop("X should not contain NA values.")
+    if(any(is.na(y))) stop("y should not contain NA values.")
+  }
+
   # Generate covariates and potential outcomes from a classification dataset.
 
   if(is.null(X)){
@@ -371,6 +433,7 @@ generate_bandit_data <- function(X=NULL,
   ys <- y[shuffler]
   A <- nrow(xs)
   A <- min(A, 20000)
+  .check_A(A)
   xs <- xs[1:A,]
   ys <- ys[1:A]
   K <- length(unique(ys))
@@ -384,9 +447,53 @@ generate_bandit_data <- function(X=NULL,
   return(list(data = data, mus = mus))
 }
 
+#' simple_tree_data function
+#'
+#' Generates covariates and potential outcomes of a synthetic dataset for a simple tree model.
+#'
+#' @param A Integer. Number of observations in the dataset.
+#' @param K Integer. Number of treatment arms.
+#' @param p Integer. Number of covariates.
+#' @param noise_std Numeric. Standard deviation of the noise added to the potential outcomes.
+#' @param split Numeric. Split point for creating treatment groups based on the covariates.
+#' @param signal_strength Numeric. Strength of the signal in the potential outcomes.
+#' @param seed Integer. Seed value for reproducibility.
+#' @param noise_form Character. Distribution of the noise added to the potential outcomes.
+#'   Can be either "normal" or "uniform".
+#'
+#' @return A list containing the generated dataset and the true potential outcome means.
+#'   The dataset includes the following components:
+#'   \itemize{
+#'     \item \code{xs}: Covariate matrix.
+#'     \item \code{ys}: Potential outcome matrix.
+#'     \item \code{muxs}: True treatment assignment matrix.
+#'     \item \code{wxs}: Binary treatment indicator matrix.
+#'   }
+#'   The true potential outcome means are stored in the \code{mus} component.
+#'
+#' @examples
+#' A <- 1000
+#' K <- 4     # Number of treatment arms
+#' p <- 10    # Number of covariates
+#' noise_std <- 1.0      # Standard deviation of noise
+#' split <- 1.676       # Split value for generating binary assignments
+#' signal_strength <- 1.0  # Signal strength multiplier
+#' seed <- 123           # Seed for reproducibility
+#' noise_form <- 'normal'  # Noise form (either 'normal' or 'uniform')
+#' synthetic_data <- simple_tree_data(A = A, K = 4, p = 10, noise_std = 1.0, split = 1.676,
+#'                                    signal_strength = 1.0, seed = 123, noise_form = "normal")
+#'
 #' @export
-simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676, signal_strength=1.0, seed=NULL, noise_form='normal') {
+simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676,
+                             signal_strength=1.0, seed=NULL, noise_form='normal') {
   # Generate covariates and potential outcomes of a synthetic dataset.
+
+  # Input Check
+  if(!is.numeric(noise_std) || noise_std < 0) stop("noise_std should be a non-negative numeric value.")
+  if(!is.numeric(split)) stop("split should be a numeric value.")
+  if(!is.numeric(signal_strength)) stop("signal_strength should be a numeric value.")
+  if(!is.character(noise_form) || !noise_form %in% c('normal', 'uniform')) stop("noise_form should be either 'normal' or 'uniform'.")
+  if(is.na(noise_std) || is.na(split) || is.na(signal_strength) || (is.integer(seed) && is.na(seed)) || is.na(noise_form)) stop("Inputs should not contain NA values.")
 
   stopifnot(p >= 2) # to check the input parameters satisfy certain conditions
   stopifnot(K >= 4)
@@ -444,7 +551,15 @@ simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676, signal_st
 #'
 #' @export
 calculate_balwts <- function(ws, probs) {
+
+  # Input Check
+  if(!is.numeric(ws) || is.null(ws) || any(is.na(ws))) stop("ws should be a non-null numeric vector without NAs.")
+  if(!is.numeric(probs) || is.null(probs) || any(is.na(probs))) stop("probs should be a non-null numeric matrix or array without NAs.")
+  if(length(ws) != dim(probs)[1]) stop("The length of ws must match the first dimension of probs.")
+  if(any(probs <= 0) || any(probs > 1)) stop("Values in probs must be between 0 (exclusive) and 1 (inclusive).")
+
   A <- length(ws)
+  .check_A(A)
   if (length(dim(probs)) == 2) {
     K <- dim(probs)[2]
     balwts <- matrix(0, nrow = A, ncol = K)
@@ -461,42 +576,6 @@ calculate_balwts <- function(ws, probs) {
   return(balwts)
 }
 
-#' calculate_mu_hat Function
-#'
-#' The calculate_mu_hat function calculates the estimated expected value of the reward for each arm, given the results of a bandit model.
-#'
-#' @param results a list containing the results of a bandit model, including the fitted model and the covariate matrix xs
-#'
-#' @return A vector containing the estimated expected value of the reward for each arm
-#'
-#' @examples
-#' A <- 200
-#' K <- p <- 3
-#' xs <- matrix(runif(A * p), nrow = A, ncol = p)
-#' ys <- matrix(rbinom(A * K, 1, 0.5), nrow = A, ncol = K)
-#' batch_sizes <- c(100,100)
-#' results <- run_experiment(ys = ys,
-#'                           floor_start = 5,
-#'                           floor_decay = 0.9,
-#'                           batch_sizes = batch_sizes,
-#'                           xs = xs)
-#' mu_hat <- calculate_mu_hat(results)
-#'
-#' @export
-calculate_mu_hat <- function(results) {
-  if (!is.null(results$fitted_bandit_model)) {
-    # Contextual Thompson Sampling
-    A <- length(results$yobs)
-    K <- results$fitted_bandit_model$K
-    mu_hat <- matrix(NA, nrow = A, ncol = K)
-    X <- results$xs
-    for(w in 1:results$fitted_bandit_model$K){
-      coefhat <- results$fitted_bandit_model$mu[w,]
-      mu_hat[,w] <- cbind(1, X) %*% coefhat
-    }
-    return(mu_hat)
-  }
-}
 
 #' plot_cumulative_assignment Function
 #'
@@ -508,13 +587,17 @@ calculate_mu_hat <- function(results) {
 #' @return A plot of the cumulative assignment graph
 #'
 #' @examples
-#' A <- 5
-#' K <- 3
+#' A <- 1000
+#' K <- 4
 #' xs <- matrix(runif(A * K), nrow = A, ncol = K)
 #' ys <- matrix(rbinom(A * K, 1, 0.5), nrow = A, ncol = K)
-#' model <- bandit_lin_ucb(xs, ys)
-#' experiment <- run_experiment(model, batch_sizes = c(10, 20, 30))
-#' plot_cumulative_assignment(experiment$results, experiment$batch_sizes)
+#' batch_sizes <- c(250, 250, 250, 250)
+#' results <- run_experiment(ys = ys,
+#'                           floor_start = 5,
+#'                           floor_decay = 0.9,
+#'                           batch_sizes = batch_sizes,
+#'                           xs = xs)
+#' plot_cumulative_assignment(results, batch_sizes)
 #'
 #' @export
 plot_cumulative_assignment <- function(
@@ -527,18 +610,159 @@ plot_cumulative_assignment <- function(
   # - batch_sizes: batch sizes used in the experiment
   # OUTPUT:
   # - plot of cumulative assignment graph
-
-  # access dataset components
   ws <- results$ws
   A <- length(ws)
+
+  # Input Check
+  if(!is.list(results)) stop("results should be a list.")
+  if(!all(c("ws", "probs") %in% names(results))) stop("results should contain ws and probs.")
+  if(!is.numeric(batch_sizes) || any(batch_sizes <= 0) || any(batch_sizes != round(batch_sizes)))
+    stop("batch_sizes should be a vector of positive integers.")
+
+  # access dataset components
+  .check_A(A)
   K <- dim(results$probs)[length(dim(results$probs))]
   batch_size_cumsum <- cumsum(batch_sizes)
 
   dat <- matrix(0, nrow = A, ncol = K)
   dat[cbind(1:A, ws)] <- 1
   dat <- apply(dat, 2, cumsum)
-  graphics::matplot(dat, type = c("l"), col =1:K)
+  graphics::matplot(dat, type = c("l"), col =1:K,
+                    xlab = "Observations",
+                    ylab = "Cumulative assignment",
+                    main = "Overall assignment")
   graphics::abline(v=batch_size_cumsum, col="#00ccff")
   graphics::legend("topleft", legend = 1:K, col=1:K, lty=1:K)
 }
 
+# Estimating the expected rewards of different arms using ridge regression
+
+#' Ridge Regression Initialization for Arm Expected Rewards
+#'
+#' Initializes matrices needed for ridge regression to estimate the expected rewards of different arms.
+#'
+#' @param p Number of covariates.
+#' @param K Number of arms.
+#'
+#' @return A list containing initialized matrices `R_A`, `R_Ainv`, `b`, and `theta` for each arm.
+#' @export
+ridge_init <- function(p, K){
+  # Initializes matrices needed for ridge regression.
+
+  # Inputs:
+  #
+  #   p: Number of covariates.
+  #   K: Number of arms.
+  # Output:
+  #   Initialized matrices R_A, R_Ainv, b, and theta for each arm.
+
+  #Input check
+  if (!is.numeric(p) || length(p) != 1 || p <= 0) stop("p should be a positive numeric value.")
+  if (!is.numeric(K) || length(K) != 1 || K <= 0) stop("K should be a positive numeric value.")
+
+  R_A <- vector("list", K)
+  R_Ainv <- vector("list", K)
+  for (k in 1:K){
+    R_A[[k]] <- diag(p+1)
+    R_Ainv[[k]] <- diag(p+1)
+  }
+  b <- matrix(0, nrow=K, ncol=p+1)
+  theta <- matrix(0, nrow=K, ncol=p+1)
+  return(list(R_A = R_A, R_Ainv = R_Ainv, b = b, theta = theta))
+}
+
+#' Ridge Regression Update for Arm Expected Rewards
+#'
+#' Given previous matrices and a new observation, updates the matrices for ridge regression.
+#'
+#' @param R_A The current matrix A for an arm.
+#' @param b The current vector b for an arm.
+#' @param xs Matrix of observed covariates.
+#' @param t The current time or instance.
+#' @param yobs The observed outcome for the current observation.
+#' @param alpha The ridge regression regularization parameter (default is 1).
+#'
+#' @return A list containing updated matrices `R_A`, `R_Ainv`, `b`, and `theta`.
+#' @export
+ridge_update <- function(R_A, b, xs, t, yobs, alpha){
+  # Given previous matrices and a new observation, it updates the matrices for ridge regression.
+
+  # Inputs:
+  #
+  #   A: The current matrix A for an arm.
+  #   b: The current vector b for an arm.
+  #   xs: The covariates.
+  #   ytobs: The observed outcome for the current observation.
+  # Output:
+  #   Updated matrices A, Ainv, b, and theta.
+
+  xt <- xs[t,]
+  xt1 <- c(1, xt)
+  R_A <- R_A + xt1 %*% t(xt1) + alpha * diag(length(xt1))
+  b <- b + yobs * xt1
+  R_Ainv <- solve(R_A)
+  theta <- R_Ainv %*% b
+  return(list(R_A = R_A, R_Ainv = R_Ainv, b = b, theta = theta))
+}
+
+#' Plug-in Estimates for Arm Expected Rewards Using Ridge Regression
+#'
+#' Computes plug-in estimates of arm expected rewards based on provided data.
+#'
+#' @param xs Matrix of observed covariates of shape [A, p].
+#' @param ws Vector of pulled arm indices at each time `t` of shape [A].
+#' @param yobs Vector of observed outcomes of shape [A].
+#' @param K Number of arms.
+#' @param batch_sizes Vector indicating sizes of batches in which data is processed.
+#' @param alpha The ridge regression regularization parameter (default is 1).
+#'
+#' @return A 3D array containing the expected reward estimates for each arm and each time `t`, of shape [A, A, K].
+#' @export
+ridge_muhat_lfo_pai <- function(xs, ws, yobs, K, batch_sizes, alpha=1){
+  # Return plug-in estimates of arm expected reward.
+
+  # Inputs:
+  #
+  #   xs: The observed covariates, X_t, of shape [A, p].
+  #   ws: The pulled arm indices at each time t, of shape [A].
+  #   yobs: The observed outcomes, of shape [A].
+  #   K: The number of arms.
+  #   batch_sizes: The sizes of batches in which data is processed.
+  #   alpha: The ridge regression regularization parameter.
+  # Output:
+  #
+  #   muhat: The expected reward estimates for each arm and each time t, of shape [A, A, K].
+  if (!is.matrix(xs) || ncol(xs) <= 0) stop("xs should be a matrix with more than 0 columns.")
+  if (length(ws) != nrow(xs) || length(yobs) != nrow(xs)) stop("Lengths of ws and yobs should match the number of rows in xs.")
+
+  A <- nrow(xs)
+  p <- ncol(xs)
+  result <- ridge_init(p, K)
+  R_A <- result$R_A
+  R_Ainv <- result$R_Ainv
+  b <- result$b
+  theta <- result$theta
+  muhat <- array(0, dim=c(A, A, K))
+
+  batch_cumsum <- c(0, cumsum(batch_sizes))
+
+  for (idx in 1:(length(batch_cumsum)-1)){
+    l <- batch_cumsum[idx] + 1
+    r <- batch_cumsum[idx + 1]
+    xt1 <- matrix(0, nrow=p+1, ncol=A)
+    xt1[1,] <- 1
+    xt1[2:(p+1),] <- t(xs)
+    for (w in 1:K){
+      muhat[l:r,,w] <- t(theta[w,]) %*% xt1
+    }
+    for (t in l:r){
+      w <- ws[t]
+      result <- ridge_update(R_A[[w]], b[w,], xs, t, yobs[t], alpha)
+      R_A[[w]] <- result$R_A
+      R_Ainv[[w]] <- result$R_Ainv
+      b[w,] <- result$b
+      theta[w,] <- result$theta
+    }
+  }
+  return(muhat)
+}

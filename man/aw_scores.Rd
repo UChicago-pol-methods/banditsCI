@@ -23,7 +23,7 @@ scores AIPW scores, a numeric matrix of shape [A, K].
 }
 \description{
 Compute AIPW/doubly robust scores based on observed rewards, pulled arms, and inverse
-probability scores. If mu_hat is provided, compute AIPW scores, otherwise compute IPW scores.
+probability scores. If `mu_hat` is provided, compute AIPW scores, otherwise compute IPW scores.
 }
 \examples{
 aw_scores(yobs = c(0.5, 1, 0, 1.5), ws = c(1, 2, 2, 3),

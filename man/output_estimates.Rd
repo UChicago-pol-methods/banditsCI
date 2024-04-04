@@ -2,56 +2,147 @@
 % Please edit documentation in R/adaptive_utils.R
 \name{output_estimates}
 \alias{output_estimates}
-\title{Calculate treatment effect estimates using AIPW with various weighting schemes}
+\title{Policy Evaluation with Adaptively Collected Data}
 \usage{
 output_estimates(
   policy0 = NULL,
   policy1,
   contrasts = "combined",
   gammahat,
-  contextual_probs,
+  probs_array,
   uniform = TRUE,
   non_contextual_minvar = TRUE,
   contextual_minvar = TRUE,
   non_contextual_stablevar = TRUE,
   contextual_stablevar = TRUE,
-  non_contextual_twopoint = TRUE
+  non_contextual_twopoint = TRUE,
+  floor_decay = 0
 )
 }
 \arguments{
-\item{policy0}{A * K control policy matrix for contrast evaluation, with probabilities under control. When `policy0 = NULL`, the function is estimating the value \eqn{Q(w)} of a single arm w. When `policy0` doesn't equal to `NULL`, the function is estimating treatment effects of policies as compared to control \eqn{\Delta(w_1, w_2)}, using the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}.}
+\item{policy0}{A single policy probability matrix for contrast evaluation with dimensions \code{A * K}. Each row represents treatment assignment probabilities for an individual subject, and so rows must sum to 1. When \code{policy0 = NULL}, the function estimates the value \eqn{Q(\pi)} of each policy matrix listed in \code{policy1}. When \code{policy0} is non-null, the function estimates differences in average response under each of the component policies in \code{policy1} and the \emph{single} policy in \code{policy0}.}
 
-\item{policy1}{list of A * K counterfactual treatment policy matrices for evaluation, with assignment probabilities under each policy.}
+\item{policy1}{A list of counterfactual policy matrices for evaluation with dimensions \code{A * K}. Each row represents treatment assignment probabilities for an individual subject, and so rows must sum to 1.}
 
-\item{contrasts}{Define the approach to estimate treatment effects. `combined` indicates the first approach -- the difference in AIPW scores as the unbiased scoring rule for \eqn{\Delta (w_1, w_2)}; `separate` indicates the second approach -- \eqn{\hat \Delta (w_1, w_2) = \hat Q (w_1) - \hat Q (w_2)}.}
+\item{contrasts}{The method to estimate policy contrasts, either \code{combined} or \code{separate}, discussed in \insertCite{hadad2021confidence;textual}{banditsCI} Section 3. \code{combined} indicates the difference in (A)IPW scores is directly used as the unbiased scoring rule for \eqn{\Delta (\pi^1, \pi^2)}; \code{separate} indicates that scores are used separately \eqn{\hat \Delta (\pi^1, \pi^2) = \hat Q (w_1) - \hat Q (w_2)}.}
 
-\item{gammahat}{Scores matrix.}
+\item{gammahat}{(A)IPW scores matrix with dimensions \code{A * K} in non-contextual settings, or \code{A * A * K} contextual settings. Dimensions represent time, (contexts,) treatment arms. Dimensions of \code{gammahat} and \code{probs_array} must be the same.}
 
-\item{contextual_probs}{A * A * K matrix for contextual probabilities, with dimensions representing time, contexts, treatment arms.}
+\item{probs_array}{Probability matrix or array with dimensions \code{A * K} in non-contextual settings, or \code{A * A * K} contextual settings. Dimensions represent time, (contexts,) treatment arms. Dimensions of \code{gammahat} and \code{probs_array} must be the same.}
 
 \item{uniform}{Logical, estimate uniform weights.}
 
-\item{non_contextual_minvar}{Logical, estimate non-contextual minvar weights.}
+\item{non_contextual_minvar}{Logical, estimate non-contextual \code{MinVar} weights described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.}
 
-\item{contextual_minvar}{Logical, estimate contextual minvar weights.}
+\item{contextual_minvar}{Logical, estimate contextual \code{MinVar} weights described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.}
 
-\item{non_contextual_stablevar}{Logical, estimate non-contextual stablevar weights.}
+\item{non_contextual_stablevar}{Logical, estimate non-contextual \code{StableVar} weights described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.}
 
-\item{contextual_stablevar}{Logical, estimate contextual stablevar weights.}
+\item{contextual_stablevar}{Logical, estimate contextual \code{StableVar} weights  described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.}
 
-\item{non_contextual_twopoint}{The non_contextual_twopoint parameter.}
+\item{non_contextual_twopoint}{Logical, estimate \code{two-point} allocation weights described in \insertCite{hadad2021confidence;textual}{banditsCI} Section 2.}
+
+\item{floor_decay}{A numeric value representing the floor decay parameter in the calculation. Default is 0.}
 }
 \value{
 A list of treatment effect estimates under different weighting schemes.
 }
 \description{
-This function calculates treatment effect estimates using augmented inverse probability weighting (AIPW) with various weighting schemes. The function estimates the value of a single arm or treatment effects of policies as compared to the control, using the difference in AIPW scores as the unbiased scoring rule or the difference in means between two policies. The function provides estimates under various weighting schemes, including uniform, non-contextual minvar, contextual minvar, non-contextual stablevar, contextual stablevar, and non-contextual two-point. The function is based on the algorithm developed in Zhan et al. (2021).
+This function calculates average response and differences in average response under counterfactual treatment policies.
+Estimates are produced using provided inverse probability weighted (IPW) or augmented inverse probability weighted (AIPW) scores paired with various adaptive weighting schemes, as proposed in \insertCite{hadad2021confidence;textual}{banditsCI} and \insertCite{zhan2021off;textual}{banditsCI}.
+\cr
+\cr
+We briefly outline the target quantities:
+For observations indexed \eqn{t \in \{1,\dots,A\}}, treatments \eqn{w \in \{1,\dots,K\}}, we denote as \eqn{Y_t(w)} the potential outcome for the unit at time \eqn{t} under treatment \eqn{w}.
+A policy \eqn{\pi} is a treatment assignment procedure that is the subject of evaluation, described in terms of treatment assignment probabilities for each subject to receive each counterfactual treatment.
+We target estimation of average response under a specified policy:
+\deqn{Q(\pi) := \sum_{w = 1}^{K}\textrm{E}\left[\pi(w)Y_t(w)\right]}
+The user may specify a list of list of policies to be evaluated, under \code{policy1}.
+\cr
+\cr
+Alternatively, they may estimate policy contrasts if \code{policy0} is provided:
+\deqn{\Delta(\pi^1,\pi^2) := Q(\pi^1) - Q(\pi^2) }
 }
 \examples{
-# Generate simulated data
-data <- generate_bandit_data()
-# Estimate treatment effects using AIPW with various weighting schemes
-estimates <- output_estimates(policy1 = data$policy1,
-                              gammahat = data$gammahat,
-                              contextual_probs = data$contextual_probs)
+# In a non-contextual setting, generate example values for policy1, gammahat, and probs_array
+gammahat <- matrix(c(0.5, 0.8, 0.6,
+                     0.3, 0.9, 0.2,
+                     0.5, 0.7, 0.4,
+                     0.8, 0.2, 0.6), ncol = 3)
+policy0 <- matrix(c(1, 0, 0,
+                    1, 0, 0,
+                    1, 0, 0,
+                    1, 0, 0), ncol = 3, byrow = TRUE)
+policy1 <- matrix(c(0, 1, 0,
+                    0, 1, 0,
+                    0, 1, 0,
+                    0, 1, 0), ncol = 3, byrow = TRUE)
+
+# Ensure the rows of policy1 sum to 1
+temp_policy1 <- matrix(runif(4*3), ncol = 3)
+policy1 <- list(temp_policy1 / rowSums(temp_policy1))
+
+# Ensure the rows of policy0 sum to 1
+temp_policy0 <- matrix(runif(4*3), ncol = 3)
+policy0 <- temp_policy0 / rowSums(temp_policy0)
+
+probs_array <- array(0, dim = c(4, 4, 3))
+for (i in 1:4) {
+  temp_vector <- runif(3)
+  normalized_vector <- temp_vector / sum(temp_vector)
+  probs_array[i, 1, ] <- normalized_vector
+  }
+  for (k in 1:3) {
+    for (i in 1:4) {
+    temp_vector <- runif(3)
+    normalized_vector <- temp_vector / sum(temp_vector)
+    probs_array[i, 2:4, k] <- normalized_vector
+      }
+   }
+estimates <- output_estimates(policy1 = policy1,
+                              policy0 = policy0,
+                              gammahat = gammahat,
+                              probs_array = probs_array)
+# plot
+plot_results_baseR <- function(result) {
+  estimates <- result[, "estimate"]
+  std_errors <- result[, "std.error"]
+  labels <- rownames(result)
+
+  # Define the limits for the x-axis based on estimates and std_errors
+  xlims <- c(min(estimates - std_errors), max(estimates + std_errors))
+
+  # Create the basic error bar plot using base R
+  invisible(
+    plot(estimates, 1:length(estimates), xlim=xlims, xaxt="n", xlab="Coefficient Estimate", ylab="",
+         yaxt="n", pch=16, las=1, main="Coefficients and CIs")
+  )
+
+  # Add y-axis labels
+  invisible(
+    axis(2, at=1:length(estimates), labels=labels, las=1, tick=FALSE, line=0.5)
+  )
+
+  # Add the x-axis values
+  x_ticks <- seq(from=xlims[1], to=xlims[2], by=0.1)
+  invisible(
+    axis(1, at=x_ticks[x_ticks > max(estimates + std_errors) | x_ticks < min(estimates - std_errors)],
+         labels=x_ticks[x_ticks > max(estimates + std_errors) | x_ticks < min(estimates - std_errors)])
+  )
+
+  # Add error bars
+  invisible(
+    segments(estimates - std_errors, 1:length(estimates), estimates + std_errors, 1:length(estimates))
+  )
+}
+
+sample_result <- estimates[[1]]
+par(mar=c(5, 12, 4, 2))
+plot_results_baseR(sample_result)
+
+}
+\references{
+\insertRef{hadad2021confidence}{banditsCI}
+
+\insertRef{zhan2021off}{banditsCI}
 }

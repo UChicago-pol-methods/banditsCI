@@ -1,13 +1,13 @@
 ---
-title: "banditsCI"
+title: "Confidence interval vignette."
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{my-vignette}
+  %\VignetteIndexEntry{Confidence interval vignette.}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE}
+```{r options, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -16,26 +16,33 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(banditsCI)
-library(ggplot2)
 set.seed(123)
-cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", 
-               "#D55E00", "#CC79A7")
-
 ```
 
-Set parameters. Here, we generate a dataset with 1000 observations in 4 equally 
-sized batches, 5 covariates, and 4 arms. 
+## Set parameters.
+Here, we generate a data set with 5000 observations assigned 
+over 5 batches, with 10 covariates and 4 treatment arms. 
 ```{r parameters}
-floor_start <- 5 # TODO discuss
-floor_decay <- 0.9 # TODO discuss
-batch_sizes <- c(250, 250, 250, 250)
+batch_sizes <- rep(1e3, 5)
 A <- sum(batch_sizes)
-p <- 5
+p <- 10
 K <- 4
 ```
 
-Simulate data from an interacted linear model. 
-```{r simlindata}
+We simulate the data from a tree model. 
+```{r simtreedata, eval = TRUE}
+data <- simple_tree_data(
+  A=A,
+  K=K,
+  p=p,
+  split = 0.25,
+  noise_std = 0.25)
+```
+
+Alternatively, we could use the `generate_bandit_data()` function to generate data 
+based on a `y` vector and `X` matrix, potentially useful if we had real data 
+from a pilot (this code is not evaluated here).
+```{r simlindata, eval = FALSE}
 # Interacted linear model
 X <- matrix(rnorm(A*p), ncol=p) # - X: covariates of shape [A, p]
 # generate a linear model
@@ -44,56 +51,109 @@ y_latent <- X %*% coef
 y <- as.numeric(cut(rank(y_latent),
                     # one group is twice as large as other groups
                     breaks = c(0, A*(2:(K+1)/(K+1))) ))
-data <- generate_bandit_data(X = X, y = y, noise = 0)
-
-```
-
-Alternatively, we could use tree data (this is not evaluated here). 
-```{r simtreedata, eval = FALSE}
-data <- simple_tree_data(
-  A=A,
-  K=K,
-  p=p,
-  split = 0.6,
-  noise_std = 0.5)
+data <- generate_bandit_data(X = X, y = y, noise_std = 0)
 ```
 
 ## For the contextual case
-We run a contextual experiment. 
-```{r contextual}
+We run a contextual bandit experiment using our `run_experiment()` function. 
+The algorithm used here is a version of linear Thompson sampling. 
+```{r contextual_experiment, fig.width=7, fig.height=5, out.width = "100%"}
 # access dataset components
 xs <- data[[1]]$xs
 ys <- data[[1]]$ys
-results <- run_experiment(ys, floor_start, floor_decay, batch_sizes, xs)
+results <- run_experiment(ys = ys, 
+                          floor_start = 0.9, 
+                          floor_decay = 0.05, 
+                          batch_sizes = batch_sizes, 
+                          xs = xs)
+
+# plot the cumulative assignment graph for every arm and every batch size, 
+# x-axis is the number of observations, y-axis is the cumulative assignment
+plot_cumulative_assignment(results, batch_sizes)
+```
+
+
+The overall assignment plot over-assigns to the first arm, but we note that our
+groups are not balanced: the group for whom arm 1 is best is somewhat larger. 
+
+```{r best_arm}
+table(apply(data$data$muxs, 1, which.max))
+```
+
+
+We now create separate assignment plots based on the true best arm; within each 
+context, the algorithm should over-assign treatment to the true best arm if it 
+is learning context correctly. 
+Note that the effective batch sizes are different under the different 
+conditions. 
+```{r contextual_assignment_by_arm, fig.width=7, fig.height=5, out.width = "45%"}
+for(k in 1:K){
+
+  idx <- (data$data$muxs[,k]==1)
+  batch_sizes_w <- lapply(split(idx, cut(1:sum(batch_sizes), 
+                                         c(0,cumsum(batch_sizes))) ), sum)
+  
+  dat <- matrix(0, nrow = sum(idx), ncol = K)
+  dat[cbind(1:sum(idx), results$ws[idx])] <- 1
+  dat <- apply(dat, 2, cumsum)
+  graphics::matplot(dat, type = c("l"), col =1:K, 
+                    xlab = "Observations",
+                    ylab = "Cumulative assignment",
+                    main = paste0("Assignment for arm", k))
+  graphics::abline(v=cumsum(batch_sizes_w), col="#00ccff")
+  graphics::legend("topleft", legend = 1:K, col=1:K, lty=1:K)
+  
+}
+```
+
+### Estimating response
+We then generate augmented inverse probability weighted (AIPW) scores, using a
+conditional means model and known assignment probabilities. 
+Here, the conditional means are estimated from a ridge model, which estimates 
+conditional means for each observation based only on batchwise history, using the 
+`ridge_muhat_lfo_pai()` function. 
+Other conditional means models can also be used. 
+```{r contextual_means_estimation}
+# Get estimates for policies
 
 # conditional means model
-mu_hat <- calculate_mu_hat(results)
+mu_hat <- ridge_muhat_lfo_pai(xs=xs, 
+                              ws=results$ws, 
+                              yobs=results$yobs, 
+                              K=K, 
+                              batch_sizes=batch_sizes)
+
+# Our conditional means model is currently 3 dimensional, as we estimate 
+# counterfactuals for each context at each time point. 
+# Here, we only need the estimate for the actual time point in which the 
+# observation was realized. 
+mu_hat2d <- mu_hat[1,,]
+for(i in 1:nrow(mu_hat2d)){
+  mu_hat2d[i,] <- mu_hat[i,i,]
+}
 
 # inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
 balwts <- calculate_balwts(results$ws, results$probs)
 
-# plot the cumulative assignment graph for every arm and every batch size, x-axis is the number of observations, y-axis is the cumulative assignment
-plot_cumulative_assignment(results, batch_sizes)
 
-
-aipw_scoresR_learn <- aw_scores(
+# Putting it together, generate doubly robust scores
+aipw_scores <- aw_scores(
   ws = results$ws, 
   yobs = results$yobs, 
-  mu_hat = mu_hat, 
+  mu_hat = mu_hat2d, 
   K = ncol(results$ys),
   balwts = balwts)
 
-```
-
-```{r estimation}
-# Get estimates for policies
-
 ## Define counterfactual policies
-### Control policy matrix policy0. This is a matrix with A rows and K columns, where the elements in the first column are all 1s and the elements in the remaining columns are all 0s.
+### Control policy matrix policy0. This is a matrix with A rows and K columns, 
+### where the elements in the first column are all 1s and the elements in the 
+## remaining columns are all 0s.
 policy0 <- matrix(0, nrow = A, ncol = K)
 policy0[,1] <- 1
 
-### Treatment policies list policy1. This is a list with K elements, where each list contains a matrix with A rows and K columns. Identifier of treatment x: the x th column of the matrix in the x th policy in the list is 1.
+### Treatment policies list policy1. This is a list with K elements, where each 
+### list contains a matrix with A rows and K columns. Identifier of treatment x: 
+### the x th column of the matrix in the x th policy in the list is 1.
 policy1 <- lapply(1:K, function(x) {
   pol_mat <- matrix(0, nrow = A, ncol = K)
   pol_mat[,x] <- 1
@@ -101,101 +161,200 @@ policy1 <- lapply(1:K, function(x) {
 }
 ) 
 
-## estimating the value Q(w) of a single arm w. Here we estimate all the arms in policy1 in turn. 
+## Estimating the value Q(w) of a single arm w. Here we estimate all the arms in 
+## policy1 in turn. 
 out_full <- output_estimates(
   policy1 = policy1, 
-  gammahat = aipw_scoresR_learn, 
-  contextual_probs = results$probs)
+  gammahat = aipw_scores, 
+  probs_array = results$probs,
+  floor_decay = 0.05)
+```
 
-# Get estimates for treatment effects of policies as contrast to control \delta(w_1, w_2) = E[Y_t(w_1) - Y_t(w_2)]. In Hadad, Vitor, et al (2021) there are two approaches.
-## The first approach: use the difference in AIPW scores as the unbiased scoring rule for \delta (w_1, w_2)
-### The following function implements the first approach by subtracting policy0, the control arm, from all the arms in policy1, except for the control arm itself.
+We first look at estimates of mean response under each of the treatment arms. 
+True mean values are represented by the dashed red line. 
+
+```{r contextual_means_plot, fig.width=7, fig.height=5, out.width = "45%"}
+op <- par()
+
+par(mar = c(5,11,4,2) + 0.1)
+
+# set some plotting parameters across plots
+xmin <- min(unlist(lapply(out_full, `[`, TRUE, "estimate"))) - 
+  2* max(unlist(lapply(out_full, `[`, TRUE, "std.error")))
+xmax <- max(unlist(lapply(out_full, `[`, TRUE, "estimate"))) + 
+  2* max(unlist(lapply(out_full, `[`, TRUE, "std.error")))
+
+for(i in 1:length(out_full)){
+  xest <- out_full[[i]][,"estimate"]
+  x0 <- out_full[[i]][,"estimate"] - 1.96*out_full[[i]][,"std.error"]
+  x1 <- out_full[[i]][,"estimate"] + 1.96*out_full[[i]][,"std.error"]
+  margin <- 2*mean(out_full[[i]][,"std.error"])
+  
+plot(x = xest, 
+     y = 1:length(xest),
+     yaxt = "n",
+     xlab = "Estimates",
+     ylab = "",
+     xlim = c(xmin,
+              xmax), 
+     main = paste0("Arm ", i, " mean response"))
+segments(y0 = 1:length(xest),
+         y1 = 1:length(xest),
+         x0 = x0,
+         x1 = x1)
+axis(2, at = 1:length(xest),
+     labels = names(xest), las = 2)
+abline(v = data$mus[i], col = "#FF3300", lty = "dashed")
+
+}
+suppressWarnings(par(op))
+```
+
+Then, we estimate average treatment effects of each arm compared to the control 
+arm, arm 1, using two different methods. 
+```{r contextual_ATEs_estimation}
+# Get estimates for treatment effects of policies as contrast to control 
+# \delta(w_1, w_2) = E[Y_t(w_1) - Y_t(w_2)]. 
+# In Hadad et al. (2021) there are two approaches.
+## The first approach: use the difference in AIPW scores as the unbiased scoring 
+## rule for \delta (w_1, w_2)
+### The following function implements the first approach by subtracting policy0, 
+### the control arm, from all the arms in policy1, except for the control arm 
+### itself.
 out_full_te1 <- output_estimates(
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
-  contrasts = 'combined',
-  gammahat = aipw_scoresR_learn, 
-  contextual_probs = results$probs)
+  contrasts = "combined",
+  gammahat = aipw_scores, 
+  probs_array = results$probs,
+  floor_decay = 0.05)
 
-## The second approach takes asymptotically normal inference about \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
+## The second approach takes asymptotically normal inference about 
+## \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
 out_full_te2 <- output_estimates(
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
-  contrasts = 'separate',
-  gammahat = aipw_scoresR_learn, 
-  contextual_probs = results$probs)
+  contrasts = "separate",
+  gammahat = aipw_scores, 
+  probs_array = results$probs,
+  floor_decay = 0.05)
+```
 
+Under the first approach, we calculate AIPW scores under both treatment(s) and 
+control, take the difference in AIPW scores, and then conduct adaptive 
+weighting.
+```{r contextual_ATEs_plot1, fig.width=7, fig.height=5, out.width = "45%"}
+par(mar = c(5,11,4,2) + 0.1)
 
-# Figure
+# set some plotting parameters across plots
+xmin <- min(unlist(lapply(out_full_te1, `[`, TRUE, "estimate"))) - 
+  2* max(unlist(lapply(out_full_te1, `[`, TRUE, "std.error")))
+xmax <- max(unlist(lapply(out_full_te1, `[`, TRUE, "estimate"))) + 
+  2* max(unlist(lapply(out_full_te1, `[`, TRUE, "std.error")))
 
-# Combine the data frames into a single data frame
-combinedMatrix <- do.call(rbind, out_full_te2)
-combinedMatrix <- as.data.frame(combinedMatrix)
+for(i in 1:length(out_full_te1)){
+  xest <- out_full_te1[[i]][,"estimate"]
+  x0 <- out_full_te1[[i]][,"estimate"] - 1.96*out_full_te1[[i]][,"std.error"]
+  x1 <- out_full_te1[[i]][,"estimate"] + 1.96*out_full_te1[[i]][,"std.error"]
+  margin <- 2*mean(out_full_te1[[i]][,"std.error"])
+  
+plot(x = xest, 
+     y = 1:length(xest),
+     yaxt = "n",
+     xlab = "Estimates",
+     ylab = "",
+     xlim = c(xmin,
+              xmax), 
+     main = paste0("Arm ", i+1, " ATE wrt arm 1"))
+segments(y0 = 1:length(xest),
+         y1 = 1:length(xest),
+         x0 = x0,
+         x1 = x1)
+axis(2, at = 1:length(xest),
+     labels = names(xest), las = 2)
+abline(v = data$mus[i+1] - data$mus[1], col = "#FF3300", lty = "dashed")
 
-# Add an .id column to indicate the arm number
-n_arms <- length(out_full_te2)
-n_reps <- nrow(out_full_te2[[1]])
-combinedMatrix$id <- rep(1:n_arms, each = n_reps)
+}
+suppressWarnings(par(op))
+```
 
-# Add a column to indicate the arm name
-n_arms <- n_arms+1
-combinedMatrix$arm <- rep(paste0("arm", 2:n_arms), each = n_reps)
+In the second approach, we implement adaptive weighting on treatment and control
+scores separately, and then take the difference. 
+```{r contextual_ATEs_plot2, fig.width=7, fig.height=5, out.width = "45%"}
+par(mar = c(5,11,4,2) + 0.1)
 
-# Add a method column
-values <- c("uniform", "non_contextual_minvar", "contextual_minvar", 
-            "non_contextual_stablevar", "contextual_stablevar", "non_contextual_twopoint")
-combinedMatrix$method <- rep(values, length.out = nrow(combinedMatrix))
+# set some plotting parameters across plots
+xmin <- min(unlist(lapply(out_full_te2, `[`, TRUE, "estimate"))) - 
+  2* max(unlist(lapply(out_full_te2, `[`, TRUE, "std.error")))
+xmax <- max(unlist(lapply(out_full_te2, `[`, TRUE, "estimate"))) + 
+  2* max(unlist(lapply(out_full_te2, `[`, TRUE, "std.error")))
 
+for(i in 1:length(out_full_te2)){
+  xest <- out_full_te2[[i]][,"estimate"]
+  x0 <- out_full_te2[[i]][,"estimate"] - 1.96*out_full_te2[[i]][,"std.error"]
+  x1 <- out_full_te2[[i]][,"estimate"] + 1.96*out_full_te2[[i]][,"std.error"]
+  margin <- 2*mean(out_full_te2[[i]][,"std.error"])
+  
+plot(x = xest, 
+     y = 1:length(xest),
+     yaxt = "n",
+     xlab = "Estimates",
+     ylab = "",
+     xlim = c(xmin,
+              xmax), 
+     main = paste0("Arm ", i+1, " ATE wrt arm 1"))
+segments(y0 = 1:length(xest),
+         y1 = 1:length(xest),
+         x0 = x0,
+         x1 = x1)
+axis(2, at = 1:length(xest),
+     labels = names(xest), las = 2)
+abline(v = data$mus[i+1] - data$mus[1], col = "#FF3300", lty = "dashed")
 
-# Create the plot
-plot <- ggplot(combinedMatrix, aes(x = estimate, y = method)) +
-  geom_point(aes(x = estimate), size = 2, position = position_dodge(width=0.5)) +
-  geom_errorbar(aes(xmin = estimate - 1.96*std.error, xmax = estimate + 1.96*std.error), width = 0.05, 
-                position = position_dodge(width=0.5)) +
-  xlab("Coefficient Estimate") +
-  ylab("weights") +
-  ggtitle("Coefficients and Confidence Intervals") +
-  facet_wrap(~ arm, ncol = 2)
-
-# Print the plot
-print(plot)
+}
+suppressWarnings(par(op))
 ```
 
 
 ## For the non-contextual case
 
-We run a non-contextual experiment. 
-```{r noncontextual}
-results <- run_experiment(ys, floor_start, floor_decay, batch_sizes)
+We also run a non-contextual experiment, using the same original data. 
+The algorithm used is Thompson sampling, without contexts. 
+```{r non-contextual_experiment, fig.width=7, fig.height=5, out.width = "100%"}
+# For a noncontextual experiment, we simply omit the context argument
+results <- run_experiment(ys = ys, 
+                          floor_start = 0.5, 
+                          floor_decay = 0.9, 
+                          batch_sizes = batch_sizes)
 
+# plot the cumulative assignment graph for every arm and every batch size, 
+# x-axis is the number of observations, y-axis is the cumulative assignment
+plot_cumulative_assignment(results, batch_sizes)
+```
+
+```{r noncontextual_means_estimation}
+# Get estimates for policies
 # inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
 balwts <- calculate_balwts(results$ws, results$probs)
 
-# plot the cumulative assignment graph for every arm and every batch size, x-axis is the number of observations, y-axis is the cumulative assignment
-plot_cumulative_assignment(results, batch_sizes)
-
-
-aipw_scoresR_learn <- aw_scores(
+# Generate doubly robust scores; we don't use the contexts for a conditional 
+# means model
+aipw_scores <- aw_scores(
   ws = results$ws, 
   yobs = results$yobs, 
   K = ncol(results$ys),
   balwts = balwts)
 
-```
-
-```{r estimation_nc}
-# get two-dimensional probabilities
-# TODO explain what's going on with probabilities
-# TODO what happens with contextual variances when there's 2d probs/
-probs <- results$probs[,1,]
-# Get estimates for policies
-
 ## Define counterfactual policies
-### Control policy matrix policy0. This is a matrix with A rows and K columns, where the elements in the first column are all 1s and the elements in the remaining columns are all 0s.
+### Control policy matrix policy0. This is a matrix with A rows and K columns, 
+### where the elements in the first column are all 1s and the elements in the 
+## remaining columns are all 0s.
 policy0 <- matrix(0, nrow = A, ncol = K)
 policy0[,1] <- 1
 
-### Treatment policies list policy1. This is a list with K elements, where each list contains a matrix with A rows and K columns. Identifier of treatment x: the x th column of the matrix in the x th policy in the list is 1.
+### Treatment policies list policy1. This is a list with K elements, where each 
+### list contains a matrix with A rows and K columns. Identifier of treatment x: 
+### the x th column of the matrix in the x th policy in the list is 1.
 policy1 <- lapply(1:K, function(x) {
   pol_mat <- matrix(0, nrow = A, ncol = K)
   pol_mat[,x] <- 1
@@ -203,62 +362,154 @@ policy1 <- lapply(1:K, function(x) {
 }
 ) 
 
-## estimating the value Q(w) of a single arm w. Here we estimate all the arms in policy1 in turn. 
+## Estimating the value Q(w) of a single arm w. Here we estimate all the arms in 
+## policy1 in turn. 
 out_full <- output_estimates(
   policy1 = policy1, 
-  gammahat = aipw_scoresR_learn, 
-  contextual_probs = probs)
+  gammahat = aipw_scores, 
+  probs_array = results$probs,
+  floor_decay = 0.05)
+```
 
-# Get estimates for treatment effects of policies as contrast to control \delta(w_1, w_2) = E[Y_t(w_1) - Y_t(w_2)]. In Hadad, Vitor, et al (2021) there are two approaches.
-## The first approach: use the difference in AIPW scores as the unbiased scoring rule for \delta (w_1, w_2)
-### The following function implements the first approach by subtracting policy0, the control arm, from all the arms in policy1, except for the control arm itself.
+We first look at estimates of mean response under each of the treatment arms.
+True mean values are represented by the dashed red line. 
+```{r noncontextual_means_plot, fig.width=7, fig.height=5, out.width = "45%"}
+op <- par()
+
+par(mar = c(5,11,4,2) + 0.1)
+
+# set some plotting parameters across plots
+xmin <- min(unlist(lapply(out_full, `[`, TRUE, "estimate"))) - 
+  2* max(unlist(lapply(out_full, `[`, TRUE, "std.error")))
+xmax <- max(unlist(lapply(out_full, `[`, TRUE, "estimate"))) + 
+  2* max(unlist(lapply(out_full, `[`, TRUE, "std.error")))
+
+for(i in 1:length(out_full)){
+  xest <- out_full[[i]][,"estimate"]
+  x0 <- out_full[[i]][,"estimate"] - 1.96*out_full[[i]][,"std.error"]
+  x1 <- out_full[[i]][,"estimate"] + 1.96*out_full[[i]][,"std.error"]
+  margin <- 2*mean(out_full[[i]][,"std.error"])
+  
+plot(x = xest, 
+     y = 1:length(xest),
+     yaxt = "n",
+     xlab = "Estimates",
+     ylab = "",
+     xlim = c(xmin,
+              xmax), 
+     main = paste0("Arm ", i, " mean response"))
+segments(y0 = 1:length(xest),
+         y1 = 1:length(xest),
+         x0 = x0,
+         x1 = x1)
+axis(2, at = 1:length(xest),
+     labels = names(xest), las = 2)
+abline(v = data$mus[i], col = "#FF3300", lty = "dashed")
+
+}
+suppressWarnings(par(op))
+```
+
+We again estimate average treatment effects of each arm compared to the control 
+arm, arm 1, using the two different methods. 
+```{r noncontextual_ATEs_estimation}
+# Get estimates for treatment effects of policies as contrast to control 
+# \delta(w_1, w_2) = E[Y_t(w_1) - Y_t(w_2)]. 
+# In Hadad et al. (2021) there are two approaches.
+## The first approach: use the difference in AIPW scores as the unbiased scoring 
+## rule for \delta (w_1, w_2)
+### The following function implements the first approach by subtracting policy0, 
+### the control arm, from all the arms in policy1, except for the control arm 
+### itself.
 out_full_te1 <- output_estimates(
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
-  contrasts = 'combined',
-  gammahat = aipw_scoresR_learn, 
-  contextual_probs = probs)
+  contrasts = "combined",
+  gammahat = aipw_scores, 
+  probs_array = results$probs,
+  floor_decay = 0.05)
 
-## The second approach takes asymptotically normal inference about \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
+## The second approach takes asymptotically normal inference about 
+## \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
 out_full_te2 <- output_estimates(
   policy0 = policy0,
   policy1 = policy1[-1],  ## remove the control arm from policy1
-  contrasts = 'separate',
-  gammahat = aipw_scoresR_learn, 
-  contextual_probs = probs)
+  contrasts = "separate",
+  gammahat = aipw_scores, 
+  probs_array = results$probs,
+  floor_decay = 0.05)
+```
 
+First take the difference in AIPW scores, and then conduct adaptive 
+weighting.
+```{r noncontextual_ATEs_plot1, fig.width=7, fig.height=5, out.width = "45%"}
+par(mar = c(5,11,4,2) + 0.1)
 
-# Figure
+# set some plotting parameters across plots
+xmin <- min(unlist(lapply(out_full_te1, `[`, TRUE, "estimate"))) - 
+  2* max(unlist(lapply(out_full_te1, `[`, TRUE, "std.error")))
+xmax <- max(unlist(lapply(out_full_te1, `[`, TRUE, "estimate"))) + 
+  2* max(unlist(lapply(out_full_te1, `[`, TRUE, "std.error")))
 
-# Combine the data frames into a single data frame
-combinedMatrix <- do.call(rbind, out_full_te2)
-combinedMatrix <- as.data.frame(combinedMatrix)
+for(i in 1:length(out_full_te1)){
+  xest <- out_full_te1[[i]][,"estimate"]
+  x0 <- out_full_te1[[i]][,"estimate"] - 1.96*out_full_te1[[i]][,"std.error"]
+  x1 <- out_full_te1[[i]][,"estimate"] + 1.96*out_full_te1[[i]][,"std.error"]
+  margin <- 2*mean(out_full_te1[[i]][,"std.error"])
+  
+plot(x = xest, 
+     y = 1:length(xest),
+     yaxt = "n",
+     xlab = "Estimates",
+     ylab = "",
+     xlim = c(xmin,
+              xmax), 
+     main = paste0("Arm ", i+1, " ATE wrt arm 1"))
+segments(y0 = 1:length(xest),
+         y1 = 1:length(xest),
+         x0 = x0,
+         x1 = x1)
+axis(2, at = 1:length(xest),
+     labels = names(xest), las = 2)
+abline(v = data$mus[i+1] - data$mus[1], col = "#FF3300", lty = "dashed")
 
-# Add an .id column to indicate the arm number
-n_arms <- length(out_full_te2)
-n_reps <- nrow(out_full_te2[[1]])
-combinedMatrix$id <- rep(1:n_arms, each = n_reps)
+}
+suppressWarnings(par(op))
+```
 
-# Add a column to indicate the arm name
-n_arms <- n_arms+1
-combinedMatrix$arm <- rep(paste0("arm", 2:n_arms), each = n_reps)
+Or implement adaptive weighting on treatment and control
+scores separately, and then take the difference. 
+```{r noncontextual_ATEs_plot2, fig.width=7, fig.height=5, out.width = "45%"}
+par(mar = c(5,11,4,2) + 0.1)
 
-# Add a method column
-values <- c("uniform", "non_contextual_minvar", "contextual_minvar", 
-            "non_contextual_stablevar", "contextual_stablevar", "non_contextual_twopoint")
-combinedMatrix$method <- rep(values, length.out = nrow(combinedMatrix))
+# set some plotting parameters across plots
+xmin <- min(unlist(lapply(out_full_te2, `[`, TRUE, "estimate"))) - 
+  2* max(unlist(lapply(out_full_te2, `[`, TRUE, "std.error")))
+xmax <- max(unlist(lapply(out_full_te2, `[`, TRUE, "estimate"))) + 
+  2* max(unlist(lapply(out_full_te2, `[`, TRUE, "std.error")))
 
+for(i in 1:length(out_full_te2)){
+  xest <- out_full_te2[[i]][,"estimate"]
+  x0 <- out_full_te2[[i]][,"estimate"] - 1.96*out_full_te2[[i]][,"std.error"]
+  x1 <- out_full_te2[[i]][,"estimate"] + 1.96*out_full_te2[[i]][,"std.error"]
+  margin <- 2*mean(out_full_te2[[i]][,"std.error"])
+  
+plot(x = xest, 
+     y = 1:length(xest),
+     yaxt = "n",
+     xlab = "Estimates",
+     ylab = "",
+     xlim = c(xmin,
+              xmax), 
+     main = paste0("Arm ", i+1, " ATE wrt arm 1"))
+segments(y0 = 1:length(xest),
+         y1 = 1:length(xest),
+         x0 = x0,
+         x1 = x1)
+axis(2, at = 1:length(xest),
+     labels = names(xest), las = 2)
+abline(v = data$mus[i+1] - data$mus[1], col = "#FF3300", lty = "dashed")
 
-# Create the plot
-plot <- ggplot(combinedMatrix, aes(x = estimate, y = method)) +
-  geom_point(aes(x = estimate), size = 2, position = position_dodge(width=0.5)) +
-  geom_errorbar(aes(xmin = estimate - 1.96*std.error, xmax = estimate + 1.96*std.error), width = 0.05, 
-                position = position_dodge(width=0.5)) +
-  xlab("Coefficient Estimate") +
-  ylab("weights") +
-  ggtitle("Coefficients and Confidence Intervals") +
-  facet_wrap(~ arm, ncol = 2)
-
-# Print the plot
-print(plot)
+}
+suppressWarnings(par(op))
 ```

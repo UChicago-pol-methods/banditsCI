@@ -27,6 +27,9 @@ The update_thompson function updates the parameters of a linear Thompson Samplin
 }
 \examples{
 model <- LinTSModel(K=5, p=3, floor_start=1, floor_decay=0.9, num_mc=100, is_contextual=TRUE)
-model <- update_thompson(ws=c(3,2,1), yobs=c(1,0,1), model=model, xs=matrix(rnorm(9), ncol=3))
+A <- 1000
+ws <- numeric(A)
+yobs <- numeric(A)
+model <- update_thompson(ws=ws, yobs=yobs, model=model)
 
 }
