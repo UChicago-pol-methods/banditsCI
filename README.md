@@ -55,7 +55,8 @@ The adaptive_utils.R contains estimator functions that are based on the [Adaptiv
 - non-contextual minvar,
 - contextual minvar,
 - non-contextual stablevar,
-- contextual stablevar.
+- contextual stablevar,
+- non_contextual_twopoint.
 
 ## Visualization
 

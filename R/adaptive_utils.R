@@ -436,11 +436,20 @@ output_estimates <- function(policy0 = NULL,
       policy0 <- matrix(0, nrow = A, ncol = ncol(gammahat))
     }
 
-    if(non_contextual_twopoint){
-      e <- t(sapply(1:A, function(x) probs_array[x,x,]))
-      twopoint_ratio <- twopoint_stable_var_ratio(A=A, e=e, alpha=floor_decay)
-      twopoint_h2es <- stick_breaking(twopoint_ratio)
-      wts_twopoint <- sqrt(ifelse_clip(twopoint_h2es * e, 0, twopoint_h2es * e))
+    if(non_contextual_twopoint) {
+      if (length(dim(probs_array)) == 3) {
+        # For contextual probs_array (three-dimensional)
+        e <- t(sapply(1:A, function(x) probs_array[x, x, ]))
+        twopoint_ratio <- twopoint_stable_var_ratio(A = A, e = e, alpha = floor_decay)
+        twopoint_h2es <- stick_breaking(twopoint_ratio)
+        wts_twopoint <- sqrt(ifelse_clip(twopoint_h2es * e, 0, twopoint_h2es * e))
+      } else if (length(dim(probs_array)) == 2) {
+        # For non-contextual probs_array (two-dimensional)
+        e <- probs_array
+        twopoint_ratio <- twopoint_stable_var_ratio(A = A, e = e, alpha = floor_decay)
+        twopoint_h2es <- stick_breaking(twopoint_ratio)
+        wts_twopoint <- sqrt(ifelse_clip(twopoint_h2es * e, 0, twopoint_h2es * e))
+      }
     }
 
     for(j in 1:length(policy1)){
