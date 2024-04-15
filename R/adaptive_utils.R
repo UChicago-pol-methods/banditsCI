@@ -380,6 +380,7 @@ output_estimates <- function(policy0 = NULL,
                              contextual_stablevar = TRUE,
                              non_contextual_twopoint = TRUE,
                              floor_decay = 0){
+  print("Starting output_estimates function")
   # Input Check
   if (!is.null(policy0) && (!is.matrix(policy0) || any(is.na(policy0)))) stop("policy0 must be a matrix without NAs or NULL.")
 #  if (!all(abs(rowSums(policy0) - 1) < 1e-8)) stop("Rows of policy0 must sum to 1.")
@@ -429,6 +430,9 @@ output_estimates <- function(policy0 = NULL,
                              'non_contextual_stablevar',
                              'contextual_stablevar',
                              'non_contextual_twopoint')
+      print(paste("Initial output matrix for policy", x, ":"))
+      print(out_mat)
+
       out_mat
     })
 
@@ -450,6 +454,18 @@ output_estimates <- function(policy0 = NULL,
         twopoint_h2es <- stick_breaking(twopoint_ratio)
         wts_twopoint <- sqrt(ifelse_clip(twopoint_h2es * e, 0, twopoint_h2es * e))
       }
+      print(paste("Dimension of e:", dim(e)))
+      print("First 10 rows of matrix 'e':")
+      print(e[1:10, ], digits=8)
+      print(paste("Dimension of twopoint_ratio:", dim(twopoint_ratio)))
+      print("First 10 rows of 'twopoint_ratio':")
+      print(twopoint_ratio[1:10], digits=8)
+      print(paste("Dimension of twopoint_h2es:", dim(twopoint_h2es)))
+      print("First 10 rows of 'twopoint_h2es':")
+      print(twopoint_h2es[1:10], digits=8)
+      print(paste("Dimension of wts_twopoint:", dim(wts_twopoint)))
+      print("First 10 rows of 'wts_twopoint':")
+      print(wts_twopoint[1:10], digits=8)
     }
 
     for(j in 1:length(policy1)){
@@ -521,6 +537,8 @@ output_estimates <- function(policy0 = NULL,
         result['std.error'] <- sqrt(result['var'])
         results[[j]]['non_contextual_twopoint',] <- result[c('estimate', 'std.error')]
       }
+      print(paste("Dimension of evalwts:", dim(evalwts)))
+      # print(paste("first 20 rows of evalwts", evalwts[1:20, ]))
     }
     return(results)
 
