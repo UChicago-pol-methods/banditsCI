@@ -555,7 +555,8 @@ output_estimates <- function(policy0 = NULL,
       contextual_minvar = contextual_minvar,
       non_contextual_stablevar = non_contextual_stablevar,
       contextual_stablevar = contextual_stablevar,
-      non_contextual_twopoint = non_contextual_twopoint
+      non_contextual_twopoint = non_contextual_twopoint,
+      floor_decay = floor_decay
     )
 
     # treatment estimates
@@ -569,7 +570,8 @@ output_estimates <- function(policy0 = NULL,
       contextual_minvar = contextual_minvar,
       non_contextual_stablevar = non_contextual_stablevar,
       contextual_stablevar = contextual_stablevar,
-      non_contextual_twopoint = non_contextual_twopoint
+      non_contextual_twopoint = non_contextual_twopoint,
+      floor_decay = floor_decay
     )
 
     out_full_te2 <- lapply(out_full1, function(x){
