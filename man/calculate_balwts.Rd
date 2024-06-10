@@ -18,6 +18,7 @@ A matrix of shape [A, K] or [A, A, K] containing the inverse probability score o
 The calculate_balwts function calculates the inverse probability score of pulling arms, given the actions taken and the true probabilities of each arm being chosen.
 }
 \examples{
+set.seed(123)
 A <- 5
 K <- 3
 ws <- sample(1:K, A, replace = TRUE)

@@ -25,3 +25,16 @@ A 3D array containing the expected reward estimates for each arm and each time `
 \description{
 Computes plug-in estimates of arm expected rewards based on provided data.
 }
+\examples{
+set.seed(123)
+p <- 3
+K <- 5
+A <- 100
+xs <- matrix(runif(A * p), nrow = A, ncol = p)
+ws <- sample(1:K, A, replace = TRUE)
+yobs <- runif(A)
+batch_sizes <- c(25, 25, 25, 25)
+muhat <- ridge_muhat_lfo_pai(xs, ws, yobs, K, batch_sizes)
+print(muhat)
+
+}

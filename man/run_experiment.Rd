@@ -33,6 +33,7 @@ A list containing the pulled arms (ws), observed rewards (yobs), assignment prob
 The run_experiment function runs a LinTS or non-contextual TS bandit experiment, given potential outcomes and covariates.
 }
 \examples{
+set.seed(123)
 A <- 1000
 K <- 4
 xs <- matrix(runif(A * K), nrow = A, ncol = K)

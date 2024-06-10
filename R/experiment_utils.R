@@ -66,6 +66,7 @@ LinTSModel <- function(K,
 #' @return A list containing the updated parameters of the LinTSModel
 #'
 #' @examples
+#' set.seed(123)
 #' model <- LinTSModel(K=5, p=3, floor_start=1, floor_decay=0.9, num_mc=100, is_contextual=TRUE)
 #' A <- 1000
 #' ws <- numeric(A)
@@ -167,6 +168,7 @@ update_thompson <- function(
 #' @return A list containing the drawn arms (w) and their corresponding probabilities (ps)
 #'
 #' @examples
+#' set.seed(123)
 #' model <- LinTSModel(K=5, p=3, floor_start=1, floor_decay=0.9, num_mc=100, is_contextual=TRUE)
 #' draws <- draw_thompson(model=model, start=1, end=10, xs=matrix(rnorm(30), ncol=3))
 #'
@@ -245,6 +247,7 @@ draw_thompson <- function(
 #' @return A list containing the pulled arms (ws), observed rewards (yobs), assignment probabilities (probs), and the fitted bandit model (fitted_bandit_model)
 #'
 #' @examples
+#' set.seed(123)
 #'A <- 1000
 #'K <- 4
 #'xs <- matrix(runif(A * K), nrow = A, ncol = K)
@@ -472,6 +475,7 @@ generate_bandit_data <- function(X=NULL,
 #'   The true potential outcome means are stored in the \code{mus} component.
 #'
 #' @examples
+#' set.seed(123)
 #' A <- 1000
 #' K <- 4     # Number of treatment arms
 #' p <- 10    # Number of covariates
@@ -543,6 +547,7 @@ simple_tree_data <- function(A, K=5, p=10, noise_std=1.0, split=1.676,
 #' @return A matrix of shape [A, K] or [A, A, K] containing the inverse probability score of pulling arms
 #'
 #' @examples
+#' set.seed(123)
 #' A <- 5
 #' K <- 3
 #' ws <- sample(1:K, A, replace = TRUE)
@@ -587,6 +592,7 @@ calculate_balwts <- function(ws, probs) {
 #' @return A plot of the cumulative assignment graph
 #'
 #' @examples
+#' set.seed(123)
 #' A <- 1000
 #' K <- 4
 #' xs <- matrix(runif(A * K), nrow = A, ncol = K)
@@ -645,6 +651,12 @@ plot_cumulative_assignment <- function(
 #' @param K Number of arms.
 #'
 #' @return A list containing initialized matrices `R_A`, `R_Ainv`, `b`, and `theta` for each arm.
+#'
+#' @examples
+#' p <- 3
+#' K <- 5
+#' init <- ridge_init(p, K)
+#'
 #' @export
 ridge_init <- function(p, K){
   # Initializes matrices needed for ridge regression.
@@ -683,6 +695,20 @@ ridge_init <- function(p, K){
 #' @param alpha The ridge regression regularization parameter (default is 1).
 #'
 #' @return A list containing updated matrices `R_A`, `R_Ainv`, `b`, and `theta`.
+#'
+#' @examples
+#' set.seed(123)
+#' p <- 3
+#' K <- 5
+#' init <- ridge_init(p, K)
+#' R_A <- init$R_A[[1]]
+#' b <- init$b[1,]
+#' xs <- matrix(runif(10 * p), nrow = 10, ncol = p)
+#' yobs <- runif(10)
+#' t <- 1
+#' alpha <- 1
+#' updated <- ridge_update(R_A, b, xs, t, yobs[t], alpha)
+#'
 #' @export
 ridge_update <- function(R_A, b, xs, t, yobs, alpha){
   # Given previous matrices and a new observation, it updates the matrices for ridge regression.
@@ -717,6 +743,19 @@ ridge_update <- function(R_A, b, xs, t, yobs, alpha){
 #' @param alpha The ridge regression regularization parameter (default is 1).
 #'
 #' @return A 3D array containing the expected reward estimates for each arm and each time `t`, of shape [A, A, K].
+#'
+#' @examples
+#' set.seed(123)
+#' p <- 3
+#' K <- 5
+#' A <- 100
+#' xs <- matrix(runif(A * p), nrow = A, ncol = p)
+#' ws <- sample(1:K, A, replace = TRUE)
+#' yobs <- runif(A)
+#' batch_sizes <- c(25, 25, 25, 25)
+#' muhat <- ridge_muhat_lfo_pai(xs, ws, yobs, K, batch_sizes)
+#' print(muhat)
+#'
 #' @export
 ridge_muhat_lfo_pai <- function(xs, ws, yobs, K, batch_sizes, alpha=1){
   # Return plug-in estimates of arm expected reward.

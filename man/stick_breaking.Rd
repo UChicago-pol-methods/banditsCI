@@ -16,6 +16,7 @@ weights stick_breaking weights of shape [A, K]
 This function implements the stick breaking algorithm for calculating weights in the stable-var scheme.
 }
 \examples{
+set.seed(123)
 Z <- array(runif(10), dim = c(2, 5))
 stick_breaking(Z)
 

@@ -291,6 +291,7 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #' @references \insertRef{zhan2021off}{banditsCI}
 #'
 #' @examples
+#' set.seed(123)
 #' # In a non-contextual setting, generate example values for policy1, gammahat, and probs_array
 #' gammahat <- matrix(c(0.5, 0.8, 0.6,
 #'                      0.3, 0.9, 0.2,
@@ -577,6 +578,7 @@ output_estimates <- function(policy0 = NULL,
 #' @return weights stick_breaking weights of shape [A, K]
 #'
 #' @examples
+#' set.seed(123)
 #' Z <- array(runif(10), dim = c(2, 5))
 #' stick_breaking(Z)
 #'

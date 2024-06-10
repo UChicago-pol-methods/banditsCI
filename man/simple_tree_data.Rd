@@ -48,6 +48,7 @@ A list containing the generated dataset and the true potential outcome means.
 Generates covariates and potential outcomes of a synthetic dataset for a simple tree model.
 }
 \examples{
+set.seed(123)
 A <- 1000
 K <- 4     # Number of treatment arms
 p <- 10    # Number of covariates

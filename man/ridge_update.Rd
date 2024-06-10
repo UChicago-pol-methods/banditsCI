@@ -25,3 +25,17 @@ A list containing updated matrices `R_A`, `R_Ainv`, `b`, and `theta`.
 \description{
 Given previous matrices and a new observation, updates the matrices for ridge regression.
 }
+\examples{
+set.seed(123)
+p <- 3
+K <- 5
+init <- ridge_init(p, K)
+R_A <- init$R_A[[1]]
+b <- init$b[1,]
+xs <- matrix(runif(10 * p), nrow = 10, ncol = p)
+yobs <- runif(10)
+t <- 1
+alpha <- 1
+updated <- ridge_update(R_A, b, xs, t, yobs[t], alpha)
+
+}

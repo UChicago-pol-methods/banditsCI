@@ -18,6 +18,7 @@ A plot of the cumulative assignment graph
 The plot_cumulative_assignment function generates a plot of the cumulative assignment graph for every arm and every batch size.
 }
 \examples{
+set.seed(123)
 A <- 1000
 K <- 4
 xs <- matrix(runif(A * K), nrow = A, ncol = K)

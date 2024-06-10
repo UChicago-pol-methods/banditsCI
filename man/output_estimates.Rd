@@ -64,6 +64,7 @@ Alternatively, they may estimate policy contrasts if \code{policy0} is provided:
 \deqn{\Delta(\pi^1,\pi^2) := Q(\pi^1) - Q(\pi^2) }
 }
 \examples{
+set.seed(123)
 # In a non-contextual setting, generate example values for policy1, gammahat, and probs_array
 gammahat <- matrix(c(0.5, 0.8, 0.6,
                      0.3, 0.9, 0.2,

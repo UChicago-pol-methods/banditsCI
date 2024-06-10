@@ -17,3 +17,9 @@ A list containing initialized matrices `R_A`, `R_Ainv`, `b`, and `theta` for eac
 \description{
 Initializes matrices needed for ridge regression to estimate the expected rewards of different arms.
 }
+\examples{
+p <- 3
+K <- 5
+init <- ridge_init(p, K)
+
+}

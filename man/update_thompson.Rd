@@ -26,6 +26,7 @@ A list containing the updated parameters of the LinTSModel
 The update_thompson function updates the parameters of a linear Thompson Sampling model for multi-armed bandit problems based on new observations.
 }
 \examples{
+set.seed(123)
 model <- LinTSModel(K=5, p=3, floor_start=1, floor_decay=0.9, num_mc=100, is_contextual=TRUE)
 A <- 1000
 ws <- numeric(A)
