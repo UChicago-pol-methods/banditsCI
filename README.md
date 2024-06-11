@@ -56,8 +56,12 @@ library(banditsCI)
 ### Estimators
 
 The adaptive_utils.R contains estimator functions that are based on the [Adaptive Weighting in Contextual Bandits](https://github.com/gsbDBI/contextual_bandits_evaluation/blob/main/adaptive/inference.py) (in paper [Hadad, Vitor, et al. (2021)](https://arxiv.org/abs/1911.02768)):
-- AIPW (uniform weights),
-- non-contextual minvar,
+
+- AIPW (uniform weights), ![formula](https://latex.codecogs.com/svg.latex?\hat{Q}^{DR}_T(\pi):=\frac{1}{T}\sum_{t=1}^T\hat{\Gamma}_t(X_t,\pi))
+  - Estimated with argument `output_estimates()`, argument `uniform = TRUE)`.
+  - Source: [Zhan et al. (2021)](https://arxiv.org/abs/2106.02029)
+- non-contextual variance minimizing estimates, 
+  - Estimated with argument `output_estimates()`, argument `minvar = TRUE)`.
 - contextual minvar,
 - non-contextual stablevar,
 - contextual stablevar,
