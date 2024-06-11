@@ -2,17 +2,16 @@
 
 #' Compute AIPW/doubly robust scores.
 #'
-#' Compute AIPW/doubly robust scores based on observed rewards, pulled arms, and inverse
-#' probability scores. If `mu_hat` is provided, compute AIPW scores, otherwise compute IPW scores.
+#' Computes AIPW/doubly robust scores based on observed rewards, pulled arms, and inverse
+#' probability scores. If \code{mu_hat} is provided, compute AIPW scores, otherwise compute IPW scores.
 #'
-#' @param yobs observed rewards, a numeric vector of length A.
-#' @param ws pulled arms, an integer vector of length A.
-#' @param balwts inverse probability score 1[W_t=w]/e_t(w) of pulling arms, a numeric matrix of
-#'     shape [A, K].
-#' @param K number of arms, an integer.
-#' @param mu_hat plug-in estimator of arm outcomes, a numeric matrix of shape [A, K], or NULL.
+#' @param yobs Numeric vector. Observed rewards. Must not contain NA values.
+#' @param ws Integer vector. Pulled arms. Must not contain NA values. Length must match \code{yobs}.
+#' @param balwts Numeric matrix. Inverse probability score \eqn{1[W_t=w]/e_t(w)} of pulling arms, shape \code{[A, K]}, where \code{A} is the number of observations and \code{K} is the number of arms. Must not contain NA values.
+#' @param K Integer. Number of arms. Must be a positive integer.
+#' @param mu_hat Optional numeric matrix. Plug-in estimator of arm outcomes, shape \code{[A, K]}, or \code{NULL}. Must not contain NA values if provided.
 #'
-#' @return scores AIPW scores, a numeric matrix of shape [A, K].
+#' @return Numeric matrix. AIPW scores, shape \code{[A, K]}.
 #'
 #' @examples
 #' aw_scores(yobs = c(0.5, 1, 0, 1.5), ws = c(1, 2, 2, 3),
@@ -22,16 +21,8 @@
 #'
 #' @export
 #' @import Rdpack
-aw_scores <- function(yobs, ws, balwts, K, mu_hat=NULL) {
-  # Compute AIPW/doubly robust scores. Return IPW scores if muhat is NULL.
-  # INPUT
-  #     - yobs: observed rewards, shape [A]
-  #     - ws: pulled arms, shape [A]
-  #     - balwts: inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
-  #     - K: number of arms
-  #     - mu_hat: plug-in estimator of arm outcomes, shape [A, K]
-  # OUTPUT
-  #     - scores: AIPW scores, shape [A, K]
+aw_scores <- function(yobs, ws, balwts, K, mu_hat = NULL) {
+  # Compute AIPW/doubly robust scores. Return IPW scores if mu_hat is NULL.
 
   # Input Check
   if (!is.numeric(yobs) || any(is.na(yobs))) stop("yobs should be a numeric vector without NAs.")
@@ -39,12 +30,10 @@ aw_scores <- function(yobs, ws, balwts, K, mu_hat=NULL) {
   if (!is.numeric(K) || (K != as.integer(K)) || K <= 0) stop("K should be a positive integer.")
   if (!is.matrix(balwts) || nrow(balwts) != length(yobs) || ncol(balwts) != K || any(is.na(balwts)))
     stop("balwts should be a numeric matrix of shape [length(yobs), K] without NAs.")
-
   if (!is.null(mu_hat)) {
     if (!is.matrix(mu_hat) || any(dim(mu_hat) != c(length(yobs), K)) || any(is.na(mu_hat)))
       stop("mu_hat should be a numeric matrix of shape [length(yobs), K] without NAs.")
   }
-
 
   expand <- function(mat, indices, ncol) {
     output <- matrix(0, nrow(mat), ncol)
@@ -53,9 +42,9 @@ aw_scores <- function(yobs, ws, balwts, K, mu_hat=NULL) {
     }
     return(output)
   }
+
   scores <- expand(balwts * yobs, ws, K)
-  # Y[t]*W[t]/e[t] term
-  if (!is.null(mu_hat)){
+  if (!is.null(mu_hat)) {
     scores <- scores + (1 - expand(balwts, ws, K)) * mu_hat
   }
   return(scores)
@@ -63,76 +52,69 @@ aw_scores <- function(yobs, ws, balwts, K, mu_hat=NULL) {
 
 #' Estimate policy value via non-contextual adaptive weighting.
 #'
-#' Estimate the value of a policy based on AIPW scores and a policy matrix using non-contextual
-#' adaptive weighting. If evalwts is not provided, use equal weights for all observations.
+#' Estimates the value of a policy based on AIPW scores and a policy matrix using non-contextual
+#' adaptive weighting. If \code{evalwts} is not provided, uses equal weights for all observations.
 #'
-#' @param scores AIPW score, a numeric matrix of shape [A, K].
-#' @param policy policy matrix pi(X_i, w), a numeric matrix of shape [A, K].
-#' @param evalwts non-contextual adaptive weights h_i, a numeric vector of length A, or NULL.
+#' @param scores Numeric matrix. AIPW scores, shape \code{[A, K]}, where \code{A} is the number of observations and \code{K} is the number of arms. Must not contain NA values.
+#' @param policy Numeric matrix. Policy matrix \eqn{\pi(X_t, w)}, shape \code{[A, K]}. Must have the same shape as \code{scores} and must not contain NA values.
+#' @param evalwts Optional numeric vector. Non-contextual adaptive weights \eqn{h_t}, length \code{A}, or \code{NULL}. Default is \code{NULL}.
 #'
-#' @return estimated policy value, a numeric scalar.
+#' @return Numeric scalar. Estimated policy value.
 #'
 #' @examples
-#' scores <- matrix(c(0.5, 0.8, 0.6, 0.3, 0.9, 0.2, 0.5, 0.7, 0.4, 0.8, 0.2, 0.6), ncol = 3)
-#' policy <- matrix(c(0.2, 0.3, 0.5, 0.6, 0.1, 0.3, 0.4, 0.5, 0.1, 0.2, 0.7, 0.1), ncol = 3)
+#' scores <- matrix(c(0.5, 0.8, 0.6,
+#'                    0.3, 0.9, 0.2,
+#'                    0.5, 0.7, 0.4,
+#'                    0.8, 0.2, 0.6), ncol = 3, byrow = TRUE)
+#' policy <- matrix(c(0.2, 0.3, 0.5,
+#'                    0.6, 0.1, 0.3,
+#'                    0.4, 0.5, 0.1,
+#'                    0.2, 0.7, 0.1), ncol = 3, byrow = TRUE)
 #' aw_estimate(scores = scores, policy = policy, evalwts = c(0.5, 1, 0.5, 1.5))
 #'
 #' @export
-aw_estimate <- function(scores, policy, evalwts=NULL){
+aw_estimate <- function(scores, policy, evalwts = NULL) {
   # Estimate policy value via non-contextual adaptive weighting.
-  #
-  # INPUT
-  #     - scores: AIPW score, shape [A, K]
-  #     - policy: policy matrix pi(X_i, w), shape [A, K]
-  #     - evalwts: non-contextual adaptive weights h_i, shape [A]
-  # OUTPUT
-  #     - estimated policy value.
 
   # Input Check
   if (!is.matrix(scores) || any(is.na(scores))) stop("scores should be a numeric matrix without NAs.")
   if (!is.matrix(policy) || any(dim(policy) != dim(scores)) || any(is.na(policy)))
     stop("policy should be a numeric matrix with the same shape as scores and without NAs.")
 
-  if(is.null(evalwts)){
+  if (is.null(evalwts)) {
     evalwts <- matrix(1, ncol = ncol(scores), nrow = nrow(scores))
   }
 
-  return(sum(evalwts*rowSums(scores * policy))/sum(evalwts))
+  return(sum(evalwts * rowSums(scores * policy)) / sum(evalwts))
 }
 
 #' Variance of policy value estimator via non-contextual adaptive weighting.
 #'
-#' Compute the variance of a policy value estimate based on AIPW scores, a policy matrix, and
+#' Computes the variance of a policy value estimate based on AIPW scores, a policy matrix, and
 #' non-contextual adaptive weights.
 #'
-#' @param scores AIPW score, a numeric matrix of shape [A, K].
-#' @param estimate policy value estimate, a numeric scalar.
-#' @param policy policy matrix pi(X_i, w), a numeric matrix of shape [A, K].
-#' @param evalwts non-contextual adaptive weights h_i, a numeric vector of length A, or NULL.
+#' @param scores Numeric matrix. AIPW scores, shape \code{[A, K]}. Must not contain NA values.
+#' @param estimate Numeric scalar. Policy value estimate.
+#' @param policy Numeric matrix. Policy matrix \eqn{\pi(X_t, w)}, shape \code{[A, K]}. Must have the same shape as \code{scores} and must not contain NA values.
+#' @param evalwts Optional numeric vector. Non-contextual adaptive weights \eqn{h_t}, length \code{A}, or \code{NULL}.
 #'
-#' @return variance of policy value estimate, a numeric scalar.
+#' @return Numeric scalar. Variance of policy value estimate.
 #'
 #' @examples
-#' scores <- matrix(c(0.5, 0.8, 0.6, 0.3, 0.9, 0.2, 0.5, 0.7, 0.4, 0.8, 0.2, 0.6), ncol = 3)
-#' policy <- matrix(c(0.2, 0.3, 0.5, 0.6, 0.1, 0.3, 0.4, 0.5, 0.1, 0.2, 0.7, 0.1), ncol = 3)
+#' scores <- matrix(c(0.5, 0.8, 0.6,
+#'                    0.3, 0.9, 0.2,
+#'                    0.5, 0.7, 0.4,
+#'                    0.8, 0.2, 0.6), ncol = 3, byrow = TRUE)
+#' policy <- matrix(c(0.2, 0.3, 0.5,
+#'                    0.6, 0.1, 0.3,
+#'                    0.4, 0.5, 0.1,
+#'                    0.2, 0.7, 0.1), ncol = 3, byrow = TRUE)
 #' estimate <- aw_estimate(scores = scores, policy = policy, evalwts = c(0.5, 1, 0.5, 1.5))
 #' aw_var(scores = scores, estimate = estimate, policy = policy, evalwts = c(0.5, 1, 0.5, 1.5))
 #'
 #' @export
-aw_var <- function(scores, estimate, policy, evalwts=NULL){
+aw_var <- function(scores, estimate, policy, evalwts = NULL) {
   # Variance of policy value estimator via non-contextual adaptive weighting.
-  #
-  # INPUT
-  #     - scores: AIPW score, shape [A, K]
-  #     - estimate: policy value estimate
-  #     - policy: policy matrix pi(X_i, w), shape [A, K]
-  #     - evalwts: non-contextual adaptive weights h_i, shape [A, 1]
-  # OUTPUT
-  #     - variance of policy value estimate
-  #
-  # var =  sum[i=0 to A] h[i]^2 * (sum[w] scores[i, w] * policy[i, w] - estimate)^2
-  #   __________________________________________________________________________
-  #                       (sum[i=0 to A] h[i])^2
 
   # Input Check
   if (!is.matrix(scores) || any(is.na(scores))) stop("scores should be a numeric matrix without NAs.")
@@ -140,46 +122,45 @@ aw_var <- function(scores, estimate, policy, evalwts=NULL){
   if (!is.matrix(policy) || any(dim(policy) != dim(scores)) || any(is.na(policy)))
     stop("policy should be a numeric matrix with the same shape as scores and without NAs.")
 
-  if(is.null(evalwts)){
+  if (is.null(evalwts)) {
     evalwts <- matrix(1, ncol = ncol(scores))
   }
 
-  return(sum((rowSums(policy * scores)-estimate)^2*evalwts^2)/sum(evalwts)^2)
+  return(sum((rowSums(policy * scores) - estimate)^2 * evalwts^2) / sum(evalwts)^2)
 }
 
-#' Return estimate and variance of policy evaluation via non-contextual weighting.
+#' Estimate/variance of policy evaluation via non-contextual weighting.
 #'
-#' Compute the estimate and variance of a policy evaluation based on non-contextual weights, AIPW scores,
+#' Computes the estimate and variance of a policy evaluation based on non-contextual weights, AIPW scores,
 #' and a policy matrix.
 #'
-#' @param w non-contextual weights, a numeric vector of length A.
-#' @param gammahat AIPW score, a numeric matrix of shape [A, K].
-#' @param policy policy matrix pi(X_i, w), a numeric matrix of shape [A, K].
+#' @param w Numeric vector. Non-contextual weights, length \code{A}. Must not contain NA values.
+#' @param gammahat Numeric matrix. AIPW scores, shape \code{[A, K]}. Must not contain NA values.
+#' @param policy Numeric matrix. Policy matrix \eqn{\pi(X_t, w)}, shape \code{[A, K]}. Must have the same shape as \code{gammahat} and must not contain NA values.
 #'
-#' @return a named numeric vector with elements `estimate` and `var`, representing the estimated
+#' @return Named numeric vector with elements \code{estimate} and \code{var}, representing the estimated
 #' policy value and the variance of the estimate, respectively.
 #'
 #' @examples
 #' w <- c(0.5, 1, 0.5, 1.5)
-#' scores <- matrix(c(0.5, 0.8, 0.6, 0.3, 0.9, 0.2, 0.5, 0.7, 0.4, 0.8, 0.2, 0.6), ncol = 3)
-#' policy <- matrix(c(0.2, 0.3, 0.5, 0.6, 0.1, 0.3, 0.4, 0.5, 0.1, 0.2, 0.7, 0.1), ncol = 3)
+#' scores <- matrix(c(0.5, 0.8, 0.6,
+#'                    0.3, 0.9, 0.2,
+#'                    0.5, 0.7, 0.4,
+#'                    0.8, 0.2, 0.6), ncol = 3, byrow = TRUE)
+#' policy <- matrix(c(0.2, 0.3, 0.5,
+#'                    0.6, 0.1, 0.3,
+#'                    0.4, 0.5, 0.1,
+#'                    0.2, 0.7, 0.1), ncol = 3, byrow = TRUE)
 #' gammahat <- scores - policy
-#' estimate(w = w, gammahat = gammahat, policy = policy)
+#' estimate(w = w, gammahat = gammahat,
+#' policy = policy)
 #'
 #' @export
-estimate <- function(w, gammahat, policy){
+estimate <- function(w, gammahat, policy) {
   # Return estimate and variance of policy evaluation via non-contextual weighting.
-  #
-  # INPUT
-  #     - w: non-contextual weights of shape [A]
-  #     - gammahat: AIPW score of shape [A, K]
-  #     - policy: policy matrix pi(X_i, w), shape [A, K]
-  #
-  # OUTPUT
-  #     - vector (estimate, var)
 
   # Input Check
-  if (!is.numeric(w) || any(is.na(w)) ) stop("w should be a numeric vector without NAs.")
+  if (!is.numeric(w) || any(is.na(w))) stop("w should be a numeric vector without NAs.")
   if (!is.matrix(gammahat) || any(is.na(gammahat))) stop("gammahat should be a numeric matrix without NAs.")
   if (!is.matrix(policy) || any(is.na(policy))) stop("policy should be a numeric matrix without NAs.")
   if (any(dim(gammahat) != dim(policy)))
@@ -193,44 +174,36 @@ estimate <- function(w, gammahat, policy){
   return(c(`estimate` = estimate, `var` = var))
 }
 
-#' Return estimate and variance of policy evaluation via contextual weighting.
+#' Estimate/variance of policy evaluation via contextual weighting.
 #'
-#' Compute the estimate and variance of a policy evaluation based on adaptive weights, AIPW scores,
+#' Computes the estimate and variance of a policy evaluation based on adaptive weights, AIPW scores,
 #' and a policy matrix.
 #'
-#' @param h adaptive weights h_i(X_s), a numeric matrix of shape [A, A].
-#' @param gammahat AIPW score, a numeric matrix of shape [A, K].
-#' @param policy policy matrix pi(X_i, w), a numeric matrix of shape [A, K].
+#' @param h Numeric matrix. Adaptive weights \eqn{h_t(X_s)}, shape \code{[A, A]}. Must be a square matrix and must not contain NA values.
+#' @param gammahat Numeric matrix. AIPW scores, shape \code{[A, K]}. Must not contain NA values.
+#' @param policy Numeric matrix. Policy matrix \eqn{\pi(X_t, w)}, shape \code{[A, K]}. Must have the same shape as \code{gammahat} and must not contain NA values.
 #'
-#' @return a named numeric vector with elements `estimate` and `var`, representing the estimated
+#' @return Named numeric vector with elements \code{estimate} and \code{var}, representing the estimated
 #' policy value and the variance of the estimate, respectively.
 #'
 #' @examples
 #' h <- matrix(c(0.4, 0.3, 0.2, 0.1,
-#'                0.2, 0.3, 0.3, 0.2,
-#'                0.5, 0.3, 0.2, 0.1,
-#'                0.1, 0.2, 0.1, 0.6), ncol = 4)
+#'               0.2, 0.3, 0.3, 0.2,
+#'               0.5, 0.3, 0.2, 0.1,
+#'               0.1, 0.2, 0.1, 0.6), ncol = 4, byrow = TRUE)
 #' scores <- matrix(c(0.5, 0.8, 0.6, 0.3,
 #'                    0.9, 0.2, 0.5, 0.7,
-#'                    0.4, 0.8, 0.2, 0.6), ncol = 3)
+#'                    0.4, 0.8, 0.2, 0.6), ncol = 3, byrow = TRUE)
 #' policy <- matrix(c(0.2, 0.3, 0.5,
 #'                    0.6, 0.1, 0.3,
 #'                    0.4, 0.5, 0.1,
-#'                    0.2, 0.7, 0.1), ncol = 3)
+#'                    0.2, 0.7, 0.1), ncol = 3, byrow = TRUE)
 #' gammahat <- scores - policy
 #' calculate_continuous_X_statistics(h = h, gammahat = gammahat, policy = policy)
 #'
 #' @export
-calculate_continuous_X_statistics <- function(h, gammahat, policy){
+calculate_continuous_X_statistics <- function(h, gammahat, policy) {
   # Return estimate and variance of policy evaluation via contextual weighting.
-  #
-  # INPUT
-  # - h: adaptive weights h_i(X_s) of size (A, A)
-  # - gammahat: AIPW score of shape [A, K]
-  # - policy: policy matrix pi(X_i, w), shape [A, K]
-  #
-  # OUTPUT:
-  #   - vector (estimate, var)
 
   # Input Check
   if (!is.matrix(h) || nrow(h) != ncol(h) || any(is.na(h))) stop("h should be a square numeric matrix without NAs.")
@@ -242,23 +215,23 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
     stop("Number of rows in h should be equal to the number of rows in gammahat and policy.")
 
   A <- dim(h)[1]
-  Z <- colSums(h)  # size (A) \sum_{s=1}^A h_s(X_i)
+  Z <- colSums(h)  # size (A) \sum_{s=1}^A h_s(X_t)
   gamma_policy <- rowSums(gammahat * policy)
   hi_Xi_Z <- h[cbind(1:A, 1:A)]
-  hi_Xi_Z[Z > 1e-6] <- hi_Xi_Z[Z > 1e-6] / Z[Z > 1e-6]  # size (A), h_i(X_i) / Z(X_i)
+  hi_Xi_Z[Z > 1e-6] <- hi_Xi_Z[Z > 1e-6] / Z[Z > 1e-6]  # size (A), h_t(X_t) / Z(X_t)
   B <- hi_Xi_Z * gamma_policy
   h_Z <- h
   h_Z[, Z > 1e-6] <- sweep(h_Z[, Z > 1e-6], 2, Z[Z > 1e-6], `/`)
 
   estimate <- sum(B)
-  var <- sum((B - colSums(h_Z*B))^2)
+  var <- sum((B - colSums(h_Z * B))^2)
 
   return(c(`estimate` = estimate, `var` = var))
 }
 
-#' Policy Evaluation with Adaptively Collected Data
+#' Policy evaluation with adaptively generated data.
 #'
-#' This function calculates average response and differences in average response under counterfactual treatment policies.
+#' Calculates average response and differences in average response under counterfactual treatment policies.
 #' Estimates are produced using provided inverse probability weighted (IPW) or augmented inverse probability weighted (AIPW) scores paired with various adaptive weighting schemes, as proposed in \insertCite{hadad2021confidence;textual}{banditsCI} and \insertCite{zhan2021off;textual}{banditsCI}.
 #'\cr
 #'\cr
@@ -273,18 +246,18 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #' Alternatively, they may estimate policy contrasts if \code{policy0} is provided:
 #'\deqn{\Delta(\pi^1,\pi^2) := Q(\pi^1) - Q(\pi^2) }
 #'
-#' @param policy0 A single policy probability matrix for contrast evaluation with dimensions \code{A * K}. Each row represents treatment assignment probabilities for an individual subject, and so rows must sum to 1. When \code{policy0 = NULL}, the function estimates the value \eqn{Q(\pi)} of each policy matrix listed in \code{policy1}. When \code{policy0} is non-null, the function estimates differences in average response under each of the component policies in \code{policy1} and the \emph{single} policy in \code{policy0}.
-#' @param policy1 A list of counterfactual policy matrices for evaluation with dimensions \code{A * K}. Each row represents treatment assignment probabilities for an individual subject, and so rows must sum to 1.
-#' @param contrasts The method to estimate policy contrasts, either \code{combined} or \code{separate}, discussed in \insertCite{hadad2021confidence;textual}{banditsCI} Section 3. \code{combined} indicates the difference in (A)IPW scores is directly used as the unbiased scoring rule for \eqn{\Delta (\pi^1, \pi^2)}; \code{separate} indicates that scores are used separately \eqn{\hat \Delta (\pi^1, \pi^2) = \hat Q (w_1) - \hat Q (w_2)}.
-#' @param gammahat (A)IPW scores matrix with dimensions \code{A * K} in non-contextual settings, or \code{A * A * K} contextual settings. Dimensions represent time, (contexts,) treatment arms. Dimensions of \code{gammahat} and \code{probs_array} must be the same.
-#' @param probs_array Probability matrix or array with dimensions \code{A * K} in non-contextual settings, or \code{A * A * K} contextual settings. Dimensions represent time, (contexts,) treatment arms. Dimensions of \code{gammahat} and \code{probs_array} must be the same.
-#' @param uniform Logical, estimate uniform weights.
-#' @param non_contextual_minvar Logical, estimate non-contextual \code{MinVar} weights described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.
-#' @param contextual_minvar Logical, estimate contextual \code{MinVar} weights described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.
-#' @param non_contextual_stablevar Logical, estimate non-contextual \code{StableVar} weights described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.
-#' @param contextual_stablevar Logical, estimate contextual \code{StableVar} weights  described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.
-#' @param non_contextual_twopoint Logical, estimate \code{two-point} allocation weights described in \insertCite{hadad2021confidence;textual}{banditsCI} Section 2.
-#' @param floor_decay A numeric value representing the floor decay parameter in the calculation. Default is 0.
+#' @param policy0 Optional matrix. Single policy probability matrix for contrast evaluation, dimensions \code{[A, K]}. Each row represents treatment assignment probabilities for an individual subject, and so rows must sum to 1. When \code{policy0 = NULL}, the function estimates the value \eqn{Q(\pi)} of each policy matrix listed in \code{policy1}. When \code{policy0} is non-null, the function estimates differences in average response under each of the component policies in \code{policy1} and the \emph{single} policy in \code{policy0}. Must not contain NA values if provided.
+#' @param policy1 List of matrices. List of counterfactual policy matrices for evaluation, dimensions \code{[A, K]}. Each row represents treatment assignment probabilities for an individual subject, and so rows must sum to 1. Must not contain NA values.
+#' @param contrasts Character. The method to estimate policy contrasts, either \code{combined} or \code{separate}, discussed in \insertCite{hadad2021confidence;textual}{banditsCI} Section 3. \code{combined} indicates the difference in (A)IPW scores is directly used as the unbiased scoring rule for \eqn{\Delta (\pi^1, \pi^2)}; \code{separate} indicates that scores are used separately \eqn{\hat \Delta (\pi^1, \pi^2) = \hat Q (w_1) - \hat Q (w_2)}.
+#' @param gammahat (A)IPW scores matrix with dimensions \code{[A, K]} in non-contextual settings, or \code{[A, A, K]} contextual settings. Dimensions represent time, (contexts,) treatment arms. Dimensions of \code{gammahat} and \code{probs_array} must be the same. Must not contain NA values.
+#' @param probs_array Numeric array. Probability matrix or array with dimensions \code{[A, K]} in non-contextual settings, or \code{[A, A, K]} contextual settings. Dimensions represent time, (contexts,) treatment arms. Dimensions of \code{gammahat} and \code{probs_array} must be the same. Must not contain NA values.
+#' @param uniform Logical. Estimate uniform weights.
+#' @param non_contextual_minvar Logical. Estimate non-contextual \code{MinVar} weights described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.
+#' @param contextual_minvar Logical. Estimate contextual \code{MinVar} weights described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.
+#' @param non_contextual_stablevar Logical. Estimate non-contextual \code{StableVar} weights described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.
+#' @param contextual_stablevar Logical. Estimate contextual \code{StableVar} weights  described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.
+#' @param non_contextual_twopoint Logical. Estimate \code{two-point} allocation weights described in \insertCite{hadad2021confidence;textual}{banditsCI} Section 2.
+#' @param floor_decay Numeric. Floor decay parameter used in the calculation. Default is 0.
 #'
 #' @return A list of treatment effect estimates under different weighting schemes.
 #' @references \insertRef{hadad2021confidence}{banditsCI}
@@ -296,77 +269,81 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy){
 #' gammahat <- matrix(c(0.5, 0.8, 0.6,
 #'                      0.3, 0.9, 0.2,
 #'                      0.5, 0.7, 0.4,
-#'                      0.8, 0.2, 0.6), ncol = 3)
+#'                      0.8, 0.2, 0.6), ncol = 3, byrow = TRUE)
 #' policy0 <- matrix(c(1, 0, 0,
 #'                     1, 0, 0,
 #'                     1, 0, 0,
 #'                     1, 0, 0), ncol = 3, byrow = TRUE)
-#' policy1 <- matrix(c(0, 1, 0,
-#'                     0, 1, 0,
-#'                     0, 1, 0,
-#'                     0, 1, 0), ncol = 3, byrow = TRUE)
-#'
-#' # Ensure the rows of policy1 sum to 1
-#' temp_policy1 <- matrix(runif(4*3), ncol = 3)
-#' policy1 <- list(temp_policy1 / rowSums(temp_policy1))
-#'
-#' # Ensure the rows of policy0 sum to 1
-#' temp_policy0 <- matrix(runif(4*3), ncol = 3)
-#' policy0 <- temp_policy0 / rowSums(temp_policy0)
+#' policy1 <- list(matrix(c(0, 1, 0,
+#'                          0, 1, 0,
+#'                          0, 1, 0,
+#'                          0, 1, 0), ncol = 3, byrow = TRUE))
 #'
 #' probs_array <- array(0, dim = c(4, 4, 3))
 #' for (i in 1:4) {
 #'   temp_vector <- runif(3)
 #'   normalized_vector <- temp_vector / sum(temp_vector)
 #'   probs_array[i, 1, ] <- normalized_vector
-#'   }
-#'   for (k in 1:3) {
-#'     for (i in 1:4) {
+#' }
+#' for (k in 1:3) {
+#'   for (i in 1:4) {
 #'     temp_vector <- runif(3)
 #'     normalized_vector <- temp_vector / sum(temp_vector)
 #'     probs_array[i, 2:4, k] <- normalized_vector
-#'       }
-#'    }
+#'   }
+#' }
 #' estimates <- output_estimates(policy1 = policy1,
 #'                               policy0 = policy0,
 #'                               gammahat = gammahat,
 #'                               probs_array = probs_array)
 #' # plot
-#' plot_results_baseR <- function(result) {
+#' plot_results <- function(result) {
 #'   estimates <- result[, "estimate"]
-#'   std_errors <- result[, "std.error"]
+#'   std.errors <- result[, "std.error"]
 #'   labels <- rownames(result)
 #'
-#'   # Define the limits for the x-axis based on estimates and std_errors
-#'   xlims <- c(min(estimates - std_errors), max(estimates + std_errors))
+#'   # Define the limits for the x-axis based on estimates and std.errors
+#'   xlims <- c(min(estimates - std.errors), max(estimates + std.errors))
 #'
 #'   # Create the basic error bar plot using base R
 #'   invisible(
-#'     plot(estimates, 1:length(estimates), xlim=xlims, xaxt="n", xlab="Coefficient Estimate", ylab="",
-#'          yaxt="n", pch=16, las=1, main="Coefficients and CIs")
+#'     plot(estimates, 1:length(estimates), xlim = xlims, xaxt = "n",
+#'          xlab = "Coefficient Estimate", ylab = "",
+#'          yaxt = "n", pch = 16, las = 1, main = "Coefficients and CIs")
 #'   )
 #'
 #'   # Add y-axis labels
 #'   invisible(
-#'     axis(2, at=1:length(estimates), labels=labels, las=1, tick=FALSE, line=0.5)
+#'     axis(2, at = 1:length(estimates), labels = labels, las = 1, tick = FALSE,
+#'          line = 0.5)
 #'   )
 #'
 #'   # Add the x-axis values
-#'   x_ticks <- seq(from=xlims[1], to=xlims[2], by=0.1)
+#'   x_ticks <- seq(from = xlims[1], to = xlims[2], by = 0.1)
 #'   invisible(
-#'     axis(1, at=x_ticks[x_ticks > max(estimates + std_errors) | x_ticks < min(estimates - std_errors)],
-#'          labels=x_ticks[x_ticks > max(estimates + std_errors) | x_ticks < min(estimates - std_errors)])
+#'     axis(1,
+#'          at = x_ticks[
+#'            (x_ticks > max(estimates + std.errors) |
+#'               x_ticks < min(estimates - std.errors))
+#'          ],
+#'          labels = x_ticks[
+#'            (x_ticks > max(estimates + std.errors) |
+#'               x_ticks < min(estimates - std.errors))
+#'          ])
 #'   )
 #'
 #'   # Add error bars
 #'   invisible(
-#'     segments(estimates - std_errors, 1:length(estimates), estimates + std_errors, 1:length(estimates))
+#'     segments(estimates - std.errors,
+#'              1:length(estimates),
+#'              estimates + std.errors,
+#'              1:length(estimates))
 #'   )
 #' }
 #'
 #' sample_result <- estimates[[1]]
 #' par(mar=c(5, 12, 4, 2))
-#' plot_results_baseR(sample_result)
+#' plot_results(sample_result)
 #'
 #' @export
 output_estimates <- function(policy0 = NULL,
@@ -380,11 +357,11 @@ output_estimates <- function(policy0 = NULL,
                              non_contextual_stablevar = TRUE,
                              contextual_stablevar = TRUE,
                              non_contextual_twopoint = TRUE,
-                             floor_decay = 0){
+                             floor_decay = 0) {
   # Input Check
   if (!is.null(policy0) && (!is.matrix(policy0) || any(is.na(policy0)))) stop("policy0 must be a matrix without NAs or NULL.")
-#  if (!all(abs(rowSums(policy0) - 1) < 1e-8)) stop("Rows of policy0 must sum to 1.")
-#  if (!all(abs(rowSums(policy1[[1]]) -1)< 1e-8)) stop("Rows of policy1 must sum to 1.")
+  #  if (!all(abs(rowSums(policy0) - 1) < 1e-8)) stop("Rows of policy0 must sum to 1.")
+  #  if (!all(abs(rowSums(policy1[[1]]) -1)< 1e-8)) stop("Rows of policy1 must sum to 1.")
   if (!is.character(contrasts) || !(contrasts %in% c('combined', 'separate'))) stop("contrasts must be either 'combined' or 'separate'")
   if (!is.matrix(gammahat) || any(is.na(gammahat))) stop("gammahat must be a matrix without NAs.")
   if (!is.array(probs_array) || any(is.na(probs_array))) stop("probs_array must be an array without NAs.")
@@ -430,11 +407,10 @@ output_estimates <- function(policy0 = NULL,
                              'non_contextual_stablevar',
                              'contextual_stablevar',
                              'non_contextual_twopoint')
-
       out_mat
     })
 
-    if(is.null(policy0)){
+    if (is.null(policy0)) {
       policy0 <- matrix(0, nrow = A, ncol = ncol(gammahat))
     }
 
@@ -455,14 +431,11 @@ output_estimates <- function(policy0 = NULL,
 
     }
 
-    for(j in 1:length(policy1)){
-
+    for (j in 1:length(policy1)) {
       policy <- policy1[[j]] - policy0
 
-      # Reciprocal of interior of (10) in Zhan et al. 2021
       mask <- matrix(1, nrow = A, ncol = A)
-
-      for(i in 2:A){
+      for (i in 2:A) {
         mask[i, i:A] <- 0
       }
 
@@ -544,8 +517,7 @@ output_estimates <- function(policy0 = NULL,
       floor_decay = floor_decay
     )
 
-    # treatment estimates
-    out_full1 = output_estimates(
+    out_full1 <- output_estimates(
       policy0 = NULL,
       policy1 = policy1,
       gammahat = gammahat,
@@ -570,12 +542,13 @@ output_estimates <- function(policy0 = NULL,
   }
 }
 
-#' stick_breaking function
+#' Stick breaking function.
 #'
-#' This function implements the stick breaking algorithm for calculating weights in the stable-var scheme.
+#' Implements the stick breaking algorithm for calculating weights in the stable-var scheme.
 #'
-#' @param Z input array of shape [A, K]
-#' @return weights stick_breaking weights of shape [A, K]
+#' @param Z Numeric array. Input array, shape \code{[A, K]}. Must not contain NA values.
+#'
+#' @return Numeric array. Stick breaking weights, shape \code{[A, K]}. Must not contain NA values.
 #'
 #' @examples
 #' set.seed(123)
@@ -583,40 +556,33 @@ output_estimates <- function(policy0 = NULL,
 #' stick_breaking(Z)
 #'
 #' @export
-# Two-point allocation scheme
-stick_breaking <- function(Z){
+stick_breaking <- function(Z) {
   # Stick breaking algorithm in stable-var weights calculation
-  #
-  # Input
-  #   Z: input array of shape [A, K]
-  # Output
-  #   weights: stick_breaking weights of shape [A, K]
 
   # Input Check
-  if (!is.matrix(Z) && !is.array(Z)) stop("Input Z must be a matrix or an array")
-  if (!is.numeric(Z)) stop("Elements of Z must be numeric")
+  if (!is.matrix(Z) && !is.array(Z)) stop("Input Z must be a matrix or an array.")
+  if (!is.numeric(Z)) stop("Elements of Z must be numeric.")
 
   A <- dim(Z)[1]
   K <- dim(Z)[2]
   weights <- array(0, dim = c(A, K))
   weight_sum <- rep(0, times = K)
   for (a in 1:A) {
-    weights[a,] <- Z[a,] * (1 - weight_sum)
-    weight_sum <- weight_sum + weights[a,]
+    weights[a, ] <- Z[a, ] * (1 - weight_sum)
+    weight_sum <- weight_sum + weights[a, ]
   }
   return(weights)
 }
 
-# Compute two-point weights
-
-#' Clip lamb values between a minimum x and maximum y
+#' Clip lamb values between a minimum x and maximum y.
 #'
-#' This function clips a numeric vector between two values.
+#' Clips a numeric vector between two values.
 #'
-#' @param lamb a numeric vector to be clipped
-#' @param x the lower bound of the clip range
-#' @param y the upper bound of the clip range
-#' @return a clipped numeric vector
+#' @param lamb Numeric vector. Values to be clipped.
+#' @param x Numeric. Lower bound of the clip range.
+#' @param y Numeric. Upper bound of the clip range.
+#'
+#' @return Numeric vector. Clipped values.
 #'
 #' @examples
 #' lamb <- c(1, 2, 3, 4, 5)
@@ -625,20 +591,21 @@ stick_breaking <- function(Z){
 #' @export
 ifelse_clip <- function(lamb, x, y) {
   # Input Check
-  if(!is.numeric(lamb)) stop("lamb must be a numeric vector")
-  if(!is.numeric(x) || length(x) != 1) stop("x must be a numeric value")
+  if (!is.numeric(lamb)) stop("lamb must be a numeric vector.")
+  if (!is.numeric(x) || length(x) != 1) stop("x must be a numeric value.")
 
-  ifelse(lamb <= x,  x, ifelse(lamb >= y, y, lamb))
+  ifelse(lamb <= x, x, ifelse(lamb >= y, y, lamb))
 }
 
-#' Calculate the allocation ratio for a two-point stable-variance bandit
+#' Calculate allocation ratio for a two-point stable-variance bandit.
 #'
-#' This function calculates the allocation ratio for a two-point stable-variance bandit, given the empirical mean and the discount parameter alpha.
+#' Calculates the allocation ratio for a two-point stable-variance bandit, given the empirical mean and the discount parameter alpha.
 #'
-#' @param A the size of the experiment.
-#' @param e the empirical mean of the bad arm
-#' @param alpha the discount parameter
-#' @return the allocation ratio lambda
+#' @param A Integer. Size of the experiment. Must be a positive integer.
+#' @param e Numeric. Empirical mean. Must be a numeric value.
+#' @param alpha Numeric. Discount parameter.
+#'
+#' @return Numeric vector. Allocation ratio lambda.
 #'
 #' @examples
 #' # Calculate the allocation ratio for a two-point stable-variance bandit with e=0.1 and alpha=0.5
@@ -650,10 +617,6 @@ twopoint_stable_var_ratio <- function(A, e, alpha){
   if(!is.numeric(A) || length(A) != 1 || A <= 0) stop("A must be a positive numeric value")
 
   a <- 1:A
-  # bad arm, e small
-  # this rearranging of the formula in the paper seems to be slightly more
-  # numerically accurate. the exact formula in the paper occasionally produces
-  # weights that are just a little over 1 (which is impossible).
   bad_lambda <- (1 - alpha) / ((1 - alpha) + A*(a/A)^alpha - a)
 
   # good arm, e large
@@ -664,8 +627,6 @@ twopoint_stable_var_ratio <- function(A, e, alpha){
   # weighted average of both
   lamb <- (1 - e) * bad_lambda + e * good_lambda
 
-  # Sometimes, due to numerical issues the lambdas end up very slightly above 1.
-  # This clipping ensures that everything is okay.
   stopifnot(lamb >= 0)
   stopifnot(lamb <= 1 + 1e-8)
   lamb <- ifelse_clip(lamb, 0, 1)

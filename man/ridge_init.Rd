@@ -7,12 +7,12 @@
 ridge_init(p, K)
 }
 \arguments{
-\item{p}{Number of covariates.}
+\item{p}{Integer. Number of covariates. Must be a positive integer.}
 
-\item{K}{Number of arms.}
+\item{K}{Integer. Number of arms. Must be a positive integer.}
 }
 \value{
-A list containing initialized matrices `R_A`, `R_Ainv`, `b`, and `theta` for each arm.
+A list containing initialized matrices \code{R_A}, \code{R_Ainv}, \code{b}, and \code{theta} for each arm.
 }
 \description{
 Initializes matrices needed for ridge regression to estimate the expected rewards of different arms.

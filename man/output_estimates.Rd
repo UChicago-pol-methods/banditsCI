@@ -2,7 +2,7 @@
 % Please edit documentation in R/adaptive_utils.R
 \name{output_estimates}
 \alias{output_estimates}
-\title{Policy Evaluation with Adaptively Collected Data}
+\title{Policy evaluation with adaptively generated data.}
 \usage{
 output_estimates(
   policy0 = NULL,
@@ -20,35 +20,35 @@ output_estimates(
 )
 }
 \arguments{
-\item{policy0}{A single policy probability matrix for contrast evaluation with dimensions \code{A * K}. Each row represents treatment assignment probabilities for an individual subject, and so rows must sum to 1. When \code{policy0 = NULL}, the function estimates the value \eqn{Q(\pi)} of each policy matrix listed in \code{policy1}. When \code{policy0} is non-null, the function estimates differences in average response under each of the component policies in \code{policy1} and the \emph{single} policy in \code{policy0}.}
+\item{policy0}{Optional matrix. Single policy probability matrix for contrast evaluation, dimensions \code{[A, K]}. Each row represents treatment assignment probabilities for an individual subject, and so rows must sum to 1. When \code{policy0 = NULL}, the function estimates the value \eqn{Q(\pi)} of each policy matrix listed in \code{policy1}. When \code{policy0} is non-null, the function estimates differences in average response under each of the component policies in \code{policy1} and the \emph{single} policy in \code{policy0}. Must not contain NA values if provided.}
 
-\item{policy1}{A list of counterfactual policy matrices for evaluation with dimensions \code{A * K}. Each row represents treatment assignment probabilities for an individual subject, and so rows must sum to 1.}
+\item{policy1}{List of matrices. List of counterfactual policy matrices for evaluation, dimensions \code{[A, K]}. Each row represents treatment assignment probabilities for an individual subject, and so rows must sum to 1. Must not contain NA values.}
 
-\item{contrasts}{The method to estimate policy contrasts, either \code{combined} or \code{separate}, discussed in \insertCite{hadad2021confidence;textual}{banditsCI} Section 3. \code{combined} indicates the difference in (A)IPW scores is directly used as the unbiased scoring rule for \eqn{\Delta (\pi^1, \pi^2)}; \code{separate} indicates that scores are used separately \eqn{\hat \Delta (\pi^1, \pi^2) = \hat Q (w_1) - \hat Q (w_2)}.}
+\item{contrasts}{Character. The method to estimate policy contrasts, either \code{combined} or \code{separate}, discussed in \insertCite{hadad2021confidence;textual}{banditsCI} Section 3. \code{combined} indicates the difference in (A)IPW scores is directly used as the unbiased scoring rule for \eqn{\Delta (\pi^1, \pi^2)}; \code{separate} indicates that scores are used separately \eqn{\hat \Delta (\pi^1, \pi^2) = \hat Q (w_1) - \hat Q (w_2)}.}
 
-\item{gammahat}{(A)IPW scores matrix with dimensions \code{A * K} in non-contextual settings, or \code{A * A * K} contextual settings. Dimensions represent time, (contexts,) treatment arms. Dimensions of \code{gammahat} and \code{probs_array} must be the same.}
+\item{gammahat}{(A)IPW scores matrix with dimensions \code{[A, K]} in non-contextual settings, or \code{[A, A, K]} contextual settings. Dimensions represent time, (contexts,) treatment arms. Dimensions of \code{gammahat} and \code{probs_array} must be the same. Must not contain NA values.}
 
-\item{probs_array}{Probability matrix or array with dimensions \code{A * K} in non-contextual settings, or \code{A * A * K} contextual settings. Dimensions represent time, (contexts,) treatment arms. Dimensions of \code{gammahat} and \code{probs_array} must be the same.}
+\item{probs_array}{Numeric array. Probability matrix or array with dimensions \code{[A, K]} in non-contextual settings, or \code{[A, A, K]} contextual settings. Dimensions represent time, (contexts,) treatment arms. Dimensions of \code{gammahat} and \code{probs_array} must be the same. Must not contain NA values.}
 
-\item{uniform}{Logical, estimate uniform weights.}
+\item{uniform}{Logical. Estimate uniform weights.}
 
-\item{non_contextual_minvar}{Logical, estimate non-contextual \code{MinVar} weights described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.}
+\item{non_contextual_minvar}{Logical. Estimate non-contextual \code{MinVar} weights described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.}
 
-\item{contextual_minvar}{Logical, estimate contextual \code{MinVar} weights described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.}
+\item{contextual_minvar}{Logical. Estimate contextual \code{MinVar} weights described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.}
 
-\item{non_contextual_stablevar}{Logical, estimate non-contextual \code{StableVar} weights described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.}
+\item{non_contextual_stablevar}{Logical. Estimate non-contextual \code{StableVar} weights described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.}
 
-\item{contextual_stablevar}{Logical, estimate contextual \code{StableVar} weights  described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.}
+\item{contextual_stablevar}{Logical. Estimate contextual \code{StableVar} weights  described in \insertCite{zhan2021off;textual}{banditsCI} Section 4.}
 
-\item{non_contextual_twopoint}{Logical, estimate \code{two-point} allocation weights described in \insertCite{hadad2021confidence;textual}{banditsCI} Section 2.}
+\item{non_contextual_twopoint}{Logical. Estimate \code{two-point} allocation weights described in \insertCite{hadad2021confidence;textual}{banditsCI} Section 2.}
 
-\item{floor_decay}{A numeric value representing the floor decay parameter in the calculation. Default is 0.}
+\item{floor_decay}{Numeric. Floor decay parameter used in the calculation. Default is 0.}
 }
 \value{
 A list of treatment effect estimates under different weighting schemes.
 }
 \description{
-This function calculates average response and differences in average response under counterfactual treatment policies.
+Calculates average response and differences in average response under counterfactual treatment policies.
 Estimates are produced using provided inverse probability weighted (IPW) or augmented inverse probability weighted (AIPW) scores paired with various adaptive weighting schemes, as proposed in \insertCite{hadad2021confidence;textual}{banditsCI} and \insertCite{zhan2021off;textual}{banditsCI}.
 \cr
 \cr
@@ -69,77 +69,81 @@ set.seed(123)
 gammahat <- matrix(c(0.5, 0.8, 0.6,
                      0.3, 0.9, 0.2,
                      0.5, 0.7, 0.4,
-                     0.8, 0.2, 0.6), ncol = 3)
+                     0.8, 0.2, 0.6), ncol = 3, byrow = TRUE)
 policy0 <- matrix(c(1, 0, 0,
                     1, 0, 0,
                     1, 0, 0,
                     1, 0, 0), ncol = 3, byrow = TRUE)
-policy1 <- matrix(c(0, 1, 0,
-                    0, 1, 0,
-                    0, 1, 0,
-                    0, 1, 0), ncol = 3, byrow = TRUE)
-
-# Ensure the rows of policy1 sum to 1
-temp_policy1 <- matrix(runif(4*3), ncol = 3)
-policy1 <- list(temp_policy1 / rowSums(temp_policy1))
-
-# Ensure the rows of policy0 sum to 1
-temp_policy0 <- matrix(runif(4*3), ncol = 3)
-policy0 <- temp_policy0 / rowSums(temp_policy0)
+policy1 <- list(matrix(c(0, 1, 0,
+                         0, 1, 0,
+                         0, 1, 0,
+                         0, 1, 0), ncol = 3, byrow = TRUE))
 
 probs_array <- array(0, dim = c(4, 4, 3))
 for (i in 1:4) {
   temp_vector <- runif(3)
   normalized_vector <- temp_vector / sum(temp_vector)
   probs_array[i, 1, ] <- normalized_vector
-  }
-  for (k in 1:3) {
-    for (i in 1:4) {
+}
+for (k in 1:3) {
+  for (i in 1:4) {
     temp_vector <- runif(3)
     normalized_vector <- temp_vector / sum(temp_vector)
     probs_array[i, 2:4, k] <- normalized_vector
-      }
-   }
+  }
+}
 estimates <- output_estimates(policy1 = policy1,
                               policy0 = policy0,
                               gammahat = gammahat,
                               probs_array = probs_array)
 # plot
-plot_results_baseR <- function(result) {
+plot_results <- function(result) {
   estimates <- result[, "estimate"]
-  std_errors <- result[, "std.error"]
+  std.errors <- result[, "std.error"]
   labels <- rownames(result)
 
-  # Define the limits for the x-axis based on estimates and std_errors
-  xlims <- c(min(estimates - std_errors), max(estimates + std_errors))
+  # Define the limits for the x-axis based on estimates and std.errors
+  xlims <- c(min(estimates - std.errors), max(estimates + std.errors))
 
   # Create the basic error bar plot using base R
   invisible(
-    plot(estimates, 1:length(estimates), xlim=xlims, xaxt="n", xlab="Coefficient Estimate", ylab="",
-         yaxt="n", pch=16, las=1, main="Coefficients and CIs")
+    plot(estimates, 1:length(estimates), xlim = xlims, xaxt = "n",
+         xlab = "Coefficient Estimate", ylab = "",
+         yaxt = "n", pch = 16, las = 1, main = "Coefficients and CIs")
   )
 
   # Add y-axis labels
   invisible(
-    axis(2, at=1:length(estimates), labels=labels, las=1, tick=FALSE, line=0.5)
+    axis(2, at = 1:length(estimates), labels = labels, las = 1, tick = FALSE,
+         line = 0.5)
   )
 
   # Add the x-axis values
-  x_ticks <- seq(from=xlims[1], to=xlims[2], by=0.1)
+  x_ticks <- seq(from = xlims[1], to = xlims[2], by = 0.1)
   invisible(
-    axis(1, at=x_ticks[x_ticks > max(estimates + std_errors) | x_ticks < min(estimates - std_errors)],
-         labels=x_ticks[x_ticks > max(estimates + std_errors) | x_ticks < min(estimates - std_errors)])
+    axis(1,
+         at = x_ticks[
+           (x_ticks > max(estimates + std.errors) |
+              x_ticks < min(estimates - std.errors))
+         ],
+         labels = x_ticks[
+           (x_ticks > max(estimates + std.errors) |
+              x_ticks < min(estimates - std.errors))
+         ])
   )
 
   # Add error bars
   invisible(
-    segments(estimates - std_errors, 1:length(estimates), estimates + std_errors, 1:length(estimates))
+    segments(estimates - std.errors,
+             1:length(estimates),
+             estimates + std.errors,
+             1:length(estimates))
   )
 }
 
 sample_result <- estimates[[1]]
 par(mar=c(5, 12, 4, 2))
-plot_results_baseR(sample_result)
+plot_results(sample_result)
 
 }
 \references{

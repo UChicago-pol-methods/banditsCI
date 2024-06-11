@@ -2,28 +2,28 @@
 % Please edit documentation in R/experiment_utils.R
 \name{ridge_muhat_lfo_pai}
 \alias{ridge_muhat_lfo_pai}
-\title{Plug-in Estimates for Arm Expected Rewards Using Ridge Regression}
+\title{Leave-future-out ridge-based estimates for arm expected rewards.}
 \usage{
 ridge_muhat_lfo_pai(xs, ws, yobs, K, batch_sizes, alpha = 1)
 }
 \arguments{
-\item{xs}{Matrix of observed covariates of shape [A, p].}
+\item{xs}{Matrix. Covariates of shape \code{[A, p]}, where \code{A} is the number of observations and \code{p} is the number of features. Must not contain NA values.}
 
-\item{ws}{Vector of pulled arm indices at each time `t` of shape [A].}
+\item{ws}{Integer vector. Indicates which arm was chosen for observations at each time \code{t}. Length \code{A}. Must not contain NA values.}
 
-\item{yobs}{Vector of observed outcomes of shape [A].}
+\item{yobs}{Numeric vector. Observed outcomes, length \code{A}. Must not contain NA values.}
 
-\item{K}{Number of arms.}
+\item{K}{Integer. Number of arms. Must be a positive integer.}
 
-\item{batch_sizes}{Vector indicating sizes of batches in which data is processed.}
+\item{batch_sizes}{Integer vector. Sizes of batches in which data is processed. Must be positive integers.}
 
-\item{alpha}{The ridge regression regularization parameter (default is 1).}
+\item{alpha}{Numeric. Ridge regression regularization parameter. Default is 1.}
 }
 \value{
-A 3D array containing the expected reward estimates for each arm and each time `t`, of shape [A, A, K].
+A 3D array containing the expected reward estimates for each arm and each time \code{t}, of shape \code{[A, A, K]}.
 }
 \description{
-Computes plug-in estimates of arm expected rewards based on provided data.
+Computes leave-future-out ridge-basedn estimates of arm expected rewards based on provided data.
 }
 \examples{
 set.seed(123)

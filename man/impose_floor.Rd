@@ -2,23 +2,23 @@
 % Please edit documentation in R/experiment_utils.R
 \name{impose_floor}
 \alias{impose_floor}
-\title{impose_floor Function}
+\title{Impose probability floor.}
 \usage{
 impose_floor(a, amin)
 }
 \arguments{
-\item{a}{a numeric vector to impose a floor on}
+\item{a}{Numeric vector. Must not contain NA values.}
 
-\item{amin}{a numeric value indicating the minimum allowed value}
+\item{amin}{Numeric. Minimum allowed value. Must be between 0 and 1.}
 }
 \value{
-A numeric vector with the same length as a, with the floor imposed on its elements
+A numeric vector with the same length as \code{a}, with the floor imposed on its elements.
 }
 \description{
-The impose_floor function imposes a floor on the given array a, ensuring that its elements are greater than or equal to amin.
+Imposes a floor on the given array a, ensuring that its elements are greater than or equal to amin.
 }
 \examples{
 a <- c(0.25, 0.25, 0.25, 0.25)
-imposed_a <- impose_floor(a=a, amin=0.1)
+imposed_a <- impose_floor(a = a, amin = 0.1)
 
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/experiment_utils.R
 \name{simple_tree_data}
 \alias{simple_tree_data}
-\title{simple_tree_data function}
+\title{Generate simple tree data.}
 \usage{
 simple_tree_data(
   A,
@@ -16,33 +16,24 @@ simple_tree_data(
 )
 }
 \arguments{
-\item{A}{Integer. Number of observations in the dataset.}
+\item{A}{Integer. Number of observations in the dataset. Must be a positive integer.}
 
-\item{K}{Integer. Number of treatment arms.}
+\item{K}{Integer. Number of arms. Must be a positive integer.}
 
-\item{p}{Integer. Number of covariates.}
+\item{p}{Integer. Number of covariates. Must be a positive integer.}
 
-\item{noise_std}{Numeric. Standard deviation of the noise added to the potential outcomes.}
+\item{noise_std}{Numeric. Standard deviation of the noise added to the potential outcomes. Must be a non-negative number.}
 
 \item{split}{Numeric. Split point for creating treatment groups based on the covariates.}
 
 \item{signal_strength}{Numeric. Strength of the signal in the potential outcomes.}
 
-\item{seed}{Integer. Seed value for reproducibility.}
+\item{seed}{Optional integer. Seed value for reproducibility. Default is \code{NULL}.}
 
-\item{noise_form}{Character. Distribution of the noise added to the potential outcomes.
-Can be either "normal" or "uniform".}
+\item{noise_form}{Character. Distribution of the noise added to the potential outcomes. Can be either "normal" or "uniform".}
 }
 \value{
-A list containing the generated dataset and the true potential outcome means.
-  The dataset includes the following components:
-  \itemize{
-    \item \code{xs}: Covariate matrix.
-    \item \code{ys}: Potential outcome matrix.
-    \item \code{muxs}: True treatment assignment matrix.
-    \item \code{wxs}: Binary treatment indicator matrix.
-  }
-  The true potential outcome means are stored in the \code{mus} component.
+A list containing the generated data (\code{xs}, \code{ys}, \code{muxs}) and the true potential outcome means (\code{mus}).
 }
 \description{
 Generates covariates and potential outcomes of a synthetic dataset for a simple tree model.
@@ -52,12 +43,13 @@ set.seed(123)
 A <- 1000
 K <- 4     # Number of treatment arms
 p <- 10    # Number of covariates
-noise_std <- 1.0      # Standard deviation of noise
-split <- 1.676       # Split value for generating binary assignments
-signal_strength <- 1.0  # Signal strength multiplier
-seed <- 123           # Seed for reproducibility
-noise_form <- 'normal'  # Noise form (either 'normal' or 'uniform')
-synthetic_data <- simple_tree_data(A = A, K = 4, p = 10, noise_std = 1.0, split = 1.676,
-                                   signal_strength = 1.0, seed = 123, noise_form = "normal")
+synthetic_data <- simple_tree_data(A = A,
+                                   K = K,
+                                   p = p,
+                                   noise_std = 1.0,
+                                   split = 1.676,
+                                   signal_strength = 1.0,
+                                   seed = 123,
+                                   noise_form = 'normal')
 
 }

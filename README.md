@@ -1,57 +1,60 @@
-# bandits_CI
-## Overview
-This project is a R package contains a set of functions designed for bandit-based experiments, policy evaluation, adaptive weighting schemes, and more. 
-The directory contains methods for developing confidence intervals using adaptive data, proposed in [Zhan, Ruohan, et al. (2021)](https://arxiv.org/abs/2106.02029) and [Hadad, Vitor, et al. (2021)](https://arxiv.org/abs/1911.02768). 
-The code in this package is directly adapted from the python code for these projects documented at [github.com/gsbDBI/adaptive-confidence-intervals](https://github.com/gsbDBI/adaptive-confidence-intervals) and [github.com/gsbDBI/contextual_bandits_evaluation](https://github.com/gsbDBI/contextual_bandits_evaluation).
+# Confidence intervals with adaptively generated data
 
-## Table of Contents
+This package contains a set of functions designed for running bandit-based experiments, along with conducting inference on policies evaluated on this adaptively generated data. 
+
+In particular, the functions implement methods for estimating confidence intervals using adaptively generated data, as proposed in [Zhan, Ruohan, et al. (2021)](https://arxiv.org/abs/2106.02029) and [Hadad, Vitor, et al. (2021)](https://arxiv.org/abs/1911.02768). 
+The code in this package is directly adapted from the original python code for those projects documented at [github.com/gsbDBI/adaptive-confidence-intervals](https://github.com/gsbDBI/adaptive-confidence-intervals) and [github.com/gsbDBI/contextual_bandits_evaluation](https://github.com/gsbDBI/contextual_bandits_evaluation). 
+
+### Installation
+
+The latest release of the package can be installed through CRAN:
+
+```R
+install.packages(banditsCI")
+```
+
+The current development version can be installed from source using devtools.
+
+```R
+devtools::install_github("Uchicago-pol-methods/contextual_bandits_evaluation")
+```
+### Usage Examples
+
+```r
+library(banditsCI)
+
+# Generate synthetic data. 
+
+# Run an experiment. 
+
+# Evaluate mean response under treatment arms. 
+
+```
+
+
+### Functions
 - [Bandit-Based Experiments](#bandit-based-experiments)
 - [Policy Evaluation](#policy-evaluation)
-- [Adaptive Weighting](#adaptive-weighting)
-- [Allocation Schemes](#allocation-schemes)
-- [Utility Functions](#utility-functions)
-- [Estimators](#Estimators)
+- [Estimators](#estimators)
 - [Visualization](#visualization)
 - [Replication](#replication)
 - [References](#references)
 
-## Bandit-Based Experiments
+### Bandit-Based Experiments
 
-- **LinTSModel**: Implements the Linear Thompson Sampling model.
-- **update_thompson**: Updates the Thompson Sampling model with new data.
-- **draw_thompson**: Draws from the Thompson Sampling model's posterior.
-- **run_experiment**: Conducts a bandit experiment using the Linear Thompson Sampling model.
-- **generate_bandit_data**: Simulates bandit experiment data.
-- **simple_tree_data**: Generates synthetic data with a simple decision tree.
-- **ridge_init**: Ridge Regression Initialization for Arm Expected Rewards.
-- **ridge_update**: Ridge Regression Update for Arm Expected Rewards.
-- **ridge_muhat_lfo_pai**: Plug-in Estimates for Arm Expected Rewards Using Ridge Regression.
+- **run_experiment**: Runs an experiment on simulated data using a contextual or non-contextual Thompson Sampling model for allocation.
+  - **generate_bandit_data**: Generates synthetic data with a simple decision tree for simulated experiments.
+  - **simple_tree_data**: Generates synthetic data with a simple decision tree for simulated experiments.
 
-## Policy Evaluation
 
-- **estimate**: Estimates the policy value and its variance based on AIPW scores, policy matrices, and weights.
-- **calculate_continuous_X_statistics**: Computes the estimate and variance of a policy evaluation using contextual weighting.
-- **output_estimates**: Estimates treatment effects using AIPW with different weighting schemes. Can be used for both single-arm value estimation and contrast evaluation between treatments.
+### Policy Evaluation
 
-## Adaptive Weighting
+- **output_estimates**: Estimates treatment effects using augmented-inverse probability-weighted estimators with different weighting schemes. Can be used for both single-arm value estimation and contrast evaluation between treatments.
+  - **ridge_muhat_lfo_pai**: Leave-future-out ridge-based estimates for arm expected rewards. 
 
-- **aw_scores**: Computes the AIPW scores for given propensity scores and outcomes.
-- **aw_estimate**: Estimates the policy value using non-contextual adaptive weighting.
-- **aw_var**: Computes the variance of the policy value estimate using non-contextual adaptive weighting.
-- **calculate_balwts**: Calculates balanced weights for AIPW estimation.
 
-## Allocation Schemes
+### Estimators
 
-- **stick_breaking**: Implements the stick breaking algorithm for calculating weights in the stable-var scheme.
-- **ifelse_clip**: Clips a numeric vector between two values.
-- **twopoint_stable_var_ratio**: Calculates the allocation ratio for a two-point stable-variance bandit, given the empirical mean and the discount parameter alpha.
-
-## Utility Functions
-
-- **impose_floor**: Imposes a floor on a set of weights to avoid extreme values.
-- **draw_thompson**: Draws from the posterior distribution in a Thompson Sampling model.
-
-## Estimators
 The adaptive_utils.R contains estimator functions that are based on the [Adaptive Weighting in Contextual Bandits](https://github.com/gsbDBI/contextual_bandits_evaluation/blob/main/adaptive/inference.py) (in paper [Hadad, Vitor, et al. (2021)](https://arxiv.org/abs/1911.02768)):
 - AIPW (uniform weights),
 - non-contextual minvar,
@@ -60,19 +63,22 @@ The adaptive_utils.R contains estimator functions that are based on the [Adaptiv
 - contextual stablevar,
 - non_contextual_twopoint.
 
-## Visualization
+### Visualization
 
 - **plot_cumulative_assignment**: Plots the cumulative assignments for different arms over time.
 
-## Replication
+### Replication
 
-- **Non-Contextual Replication**: [Replication with Python Experiment Data](https://github.com/UChicago-pol-methods/adaptive-confidence-intervals/tree/non_contextual_replication)
-- **Contextual Replication**: (provide the link later)
+We illustrate near-exact replication (with minor modifications) of simulated experimental results in the original papers. The code for the replication is available in the following repositories:
 
-## References
+- **Non-contextual replication**: [Replication with python experiment Data](https://github.com/UChicago-pol-methods/adaptive-confidence-intervals)
+- **Contextual replication**: [Replication with python experiment Data](https://github.com/Uchicago-pol-methods/contextual_bandits_evaluation)
 
-- Zhan et al. (2021) [Off-Policy Evaluation via Adaptive Weighting with Data from Contextual Bandits](https://arxiv.org/abs/2106.02029)
-- Hadad, Vitor, et al. (2021) [Confidence Intervals for Policy Evaluation in Adaptive Experiments](https://arxiv.org/abs/1911.02768)
+### References
+
+- Zhan, Ruohan, Vitor Hadad, David A. Hirshberg, and Susan Athey. "Off-policy evaluation via adaptive weighting with data from contextual bandits." In *Proceedings of the 27th ACM SIGKDD Conference on Knowledge Discovery & Data Mining*, pp. 2125-2135. 2021. [https://arxiv.org/abs/2106.02029](https://arxiv.org/abs/2106.02029)
+- Hadad, Vitor, David A. Hirshberg, Ruohan Zhan, Stefan Wager, and Susan Athey. "Confidence intervals for policy evaluation in adaptive experiments." *Proceedings of the national academy of sciences* 118, no. 15 (2021): e2014602118. [https://arxiv.org/abs/1911.02768](https://arxiv.org/abs/1911.02768)
+
 
 | estimator/weighting                                                                                                                                                                         | paper                                                                               |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | In our package?                                                                                 |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |

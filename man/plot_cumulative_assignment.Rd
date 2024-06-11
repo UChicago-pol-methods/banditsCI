@@ -2,20 +2,20 @@
 % Please edit documentation in R/experiment_utils.R
 \name{plot_cumulative_assignment}
 \alias{plot_cumulative_assignment}
-\title{plot_cumulative_assignment Function}
+\title{Plot cumulative assignment for bandit experiment.}
 \usage{
 plot_cumulative_assignment(results, batch_sizes)
 }
 \arguments{
-\item{results}{a list containing the results of the experiment, including the actions taken (ws) and the true probabilities of each arm being chosen (probs)}
+\item{results}{List. Results of the experiment, including the actions taken (\code{ws}) and the true probabilities of each arm being chosen (\code{probs}).}
 
-\item{batch_sizes}{a vector of batch sizes used in the experiment}
+\item{batch_sizes}{Integer vector. Batch sizes used in the experiment. Must be positive integers.}
 }
 \value{
-A plot of the cumulative assignment graph
+A plot of the cumulative assignment.
 }
 \description{
-The plot_cumulative_assignment function generates a plot of the cumulative assignment graph for every arm and every batch size.
+Generates a plot of the cumulative assignment.
 }
 \examples{
 set.seed(123)

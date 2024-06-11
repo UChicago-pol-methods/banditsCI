@@ -2,18 +2,18 @@
 % Please edit documentation in R/adaptive_utils.R
 \name{stick_breaking}
 \alias{stick_breaking}
-\title{stick_breaking function}
+\title{Stick breaking function.}
 \usage{
 stick_breaking(Z)
 }
 \arguments{
-\item{Z}{input array of shape [A, K]}
+\item{Z}{Numeric array. Input array, shape \code{[A, K]}. Must not contain NA values.}
 }
 \value{
-weights stick_breaking weights of shape [A, K]
+Numeric array. Stick breaking weights, shape \code{[A, K]}. Must not contain NA values.
 }
 \description{
-This function implements the stick breaking algorithm for calculating weights in the stable-var scheme.
+Implements the stick breaking algorithm for calculating weights in the stable-var scheme.
 }
 \examples{
 set.seed(123)

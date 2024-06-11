@@ -20,8 +20,8 @@ set.seed(123)
 ```
 
 ## Set parameters.
-Here, we generate a data set with 5000 observations assigned 
-over 5 batches, with 10 covariates and 4 treatment arms. 
+We generate a data set with 5,000 observations assigned over 5 equally sized 
+batches, with 10 covariates and 4 treatment arms. 
 ```{r parameters}
 batch_sizes <- rep(1e3, 5)
 A <- sum(batch_sizes)
@@ -40,21 +40,21 @@ data <- simple_tree_data(
 ```
 
 Alternatively, we could use the `generate_bandit_data()` function to generate data 
-based on a `y` vector and `X` matrix, potentially useful if we had real data 
+based on a `y` vector and `xs` matrix, potentially useful if we had real data 
 from a pilot (this code is not evaluated here).
 ```{r simlindata, eval = FALSE}
-# Interacted linear model
-X <- matrix(rnorm(A*p), ncol=p) # - X: covariates of shape [A, p]
-# generate a linear model
-coef <- c(rnorm(2), rnorm(ncol(X)-2, sd = 0.05))
-y_latent <- X %*% coef
-y <- as.numeric(cut(rank(y_latent),
-                    # one group is twice as large as other groups
-                    breaks = c(0, A*(2:(K+1)/(K+1))) ))
-data <- generate_bandit_data(X = X, y = y, noise_std = 0)
+# # Interacted linear model
+# xs <- matrix(rnorm(A*p), ncol=p) # - X: covariates of shape [A, p]
+# # generate a linear model
+# coef <- c(rnorm(2), rnorm(ncol(xs)-2, sd = 0.05))
+# y_latent <- xs %*% coef
+# y <- as.numeric(cut(rank(y_latent),
+#                     # one group is twice as large as other groups
+#                     breaks = c(0, A*(2:(K+1)/(K+1))) ))
+# data <- generate_bandit_data(xs = xs, y = y, noise_std = 0.5)
 ```
 
-## For the contextual case
+## For the contextual case. 
 We run a contextual bandit experiment using our `run_experiment()` function. 
 The algorithm used here is a version of linear Thompson sampling. 
 ```{r contextual_experiment, fig.width=7, fig.height=5, out.width = "100%"}
@@ -88,7 +88,7 @@ Note that the effective batch sizes are different under the different
 conditions. 
 ```{r contextual_assignment_by_arm, fig.width=7, fig.height=5, out.width = "45%"}
 for(k in 1:K){
-
+  
   idx <- (data$data$muxs[,k]==1)
   batch_sizes_w <- lapply(split(idx, cut(1:sum(batch_sizes), 
                                          c(0,cumsum(batch_sizes))) ), sum)
@@ -99,14 +99,14 @@ for(k in 1:K){
   graphics::matplot(dat, type = c("l"), col =1:K, 
                     xlab = "Observations",
                     ylab = "Cumulative assignment",
-                    main = paste0("Assignment for arm", k))
+                    main = paste0("Assignment for arm ", k))
   graphics::abline(v=cumsum(batch_sizes_w), col="#00ccff")
   graphics::legend("topleft", legend = 1:K, col=1:K, lty=1:K)
   
 }
 ```
 
-### Estimating response
+### Estimating response. 
 We then generate augmented inverse probability weighted (AIPW) scores, using a
 conditional means model and known assignment probabilities. 
 Here, the conditional means are estimated from a ridge model, which estimates 
@@ -179,10 +179,10 @@ op <- par()
 par(mar = c(5,11,4,2) + 0.1)
 
 # set some plotting parameters across plots
-xmin <- min(unlist(lapply(out_full, `[`, TRUE, "estimate"))) - 
-  2* max(unlist(lapply(out_full, `[`, TRUE, "std.error")))
-xmax <- max(unlist(lapply(out_full, `[`, TRUE, "estimate"))) + 
-  2* max(unlist(lapply(out_full, `[`, TRUE, "std.error")))
+xmin <- min(unlist(lapply(out_full, `[`, TRUE, "estimate")), na.rm = TRUE) - 
+  2* max(unlist(lapply(out_full, `[`, TRUE, "std.error")), na.rm = TRUE)
+xmax <- max(unlist(lapply(out_full, `[`, TRUE, "estimate")), na.rm = TRUE) + 
+  2* max(unlist(lapply(out_full, `[`, TRUE, "std.error")), na.rm = TRUE)
 
 for(i in 1:length(out_full)){
   xest <- out_full[[i]][,"estimate"]
@@ -190,22 +190,22 @@ for(i in 1:length(out_full)){
   x1 <- out_full[[i]][,"estimate"] + 1.96*out_full[[i]][,"std.error"]
   margin <- 2*mean(out_full[[i]][,"std.error"])
   
-plot(x = xest, 
-     y = 1:length(xest),
-     yaxt = "n",
-     xlab = "Estimates",
-     ylab = "",
-     xlim = c(xmin,
-              xmax), 
-     main = paste0("Arm ", i, " mean response"))
-segments(y0 = 1:length(xest),
-         y1 = 1:length(xest),
-         x0 = x0,
-         x1 = x1)
-axis(2, at = 1:length(xest),
-     labels = names(xest), las = 2)
-abline(v = data$mus[i], col = "#FF3300", lty = "dashed")
-
+  plot(x = xest, 
+       y = 1:length(xest),
+       yaxt = "n",
+       xlab = "Estimates",
+       ylab = "",
+       xlim = c(xmin,
+                xmax), 
+       main = paste0("Arm ", i, " mean response"))
+  segments(y0 = 1:length(xest),
+           y1 = 1:length(xest),
+           x0 = x0,
+           x1 = x1)
+  axis(2, at = 1:length(xest),
+       labels = names(xest), las = 2)
+  abline(v = data$mus[i], col = "#FF3300", lty = "dashed")
+  
 }
 suppressWarnings(par(op))
 ```
@@ -227,7 +227,8 @@ out_full_te1 <- output_estimates(
   contrasts = "combined",
   gammahat = aipw_scores, 
   probs_array = results$probs,
-  floor_decay = 0.05)
+  floor_decay = 0.05,
+  non_contextual_twopoint = FALSE)
 
 ## The second approach takes asymptotically normal inference about 
 ## \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
@@ -242,15 +243,20 @@ out_full_te2 <- output_estimates(
 
 Under the first approach, we calculate AIPW scores under both treatment(s) and 
 control, take the difference in AIPW scores, and then conduct adaptive 
-weighting.
+weighting. 
+
+Note: We do not used this combined estimation method with the non-contextual
+two-point estimation approach, which produces unstable estimates, and is not 
+supported in the original source. We can do non-contextual two-point estimation 
+when calculating separate adaptive weights for contrasts 
 ```{r contextual_ATEs_plot1, fig.width=7, fig.height=5, out.width = "45%"}
 par(mar = c(5,11,4,2) + 0.1)
 
 # set some plotting parameters across plots
-xmin <- min(unlist(lapply(out_full_te1, `[`, TRUE, "estimate"))) - 
-  2* max(unlist(lapply(out_full_te1, `[`, TRUE, "std.error")))
-xmax <- max(unlist(lapply(out_full_te1, `[`, TRUE, "estimate"))) + 
-  2* max(unlist(lapply(out_full_te1, `[`, TRUE, "std.error")))
+xmin <- min(unlist(lapply(out_full_te1, `[`, TRUE, "estimate")), na.rm = TRUE) - 
+  2* max(unlist(lapply(out_full_te1, `[`, TRUE, "std.error")), na.rm = TRUE)
+xmax <- max(unlist(lapply(out_full_te1, `[`, TRUE, "estimate")), na.rm = TRUE) + 
+  2* max(unlist(lapply(out_full_te1, `[`, TRUE, "std.error")), na.rm = TRUE)
 
 for(i in 1:length(out_full_te1)){
   xest <- out_full_te1[[i]][,"estimate"]
@@ -258,22 +264,22 @@ for(i in 1:length(out_full_te1)){
   x1 <- out_full_te1[[i]][,"estimate"] + 1.96*out_full_te1[[i]][,"std.error"]
   margin <- 2*mean(out_full_te1[[i]][,"std.error"])
   
-plot(x = xest, 
-     y = 1:length(xest),
-     yaxt = "n",
-     xlab = "Estimates",
-     ylab = "",
-     xlim = c(xmin,
-              xmax), 
-     main = paste0("Arm ", i+1, " ATE wrt arm 1"))
-segments(y0 = 1:length(xest),
-         y1 = 1:length(xest),
-         x0 = x0,
-         x1 = x1)
-axis(2, at = 1:length(xest),
-     labels = names(xest), las = 2)
-abline(v = data$mus[i+1] - data$mus[1], col = "#FF3300", lty = "dashed")
-
+  plot(x = xest, 
+       y = 1:length(xest),
+       yaxt = "n",
+       xlab = "Estimates",
+       ylab = "",
+       xlim = c(xmin,
+                xmax), 
+       main = paste0("Arm ", i+1, " ATE wrt arm 1"))
+  segments(y0 = 1:length(xest),
+           y1 = 1:length(xest),
+           x0 = x0,
+           x1 = x1)
+  axis(2, at = 1:length(xest),
+       labels = names(xest), las = 2)
+  abline(v = data$mus[i+1] - data$mus[1], col = "#FF3300", lty = "dashed")
+  
 }
 suppressWarnings(par(op))
 ```
@@ -284,10 +290,10 @@ scores separately, and then take the difference.
 par(mar = c(5,11,4,2) + 0.1)
 
 # set some plotting parameters across plots
-xmin <- min(unlist(lapply(out_full_te2, `[`, TRUE, "estimate"))) - 
-  2* max(unlist(lapply(out_full_te2, `[`, TRUE, "std.error")))
-xmax <- max(unlist(lapply(out_full_te2, `[`, TRUE, "estimate"))) + 
-  2* max(unlist(lapply(out_full_te2, `[`, TRUE, "std.error")))
+xmin <- min(unlist(lapply(out_full_te2, `[`, TRUE, "estimate")), na.rm = TRUE) - 
+  2* max(unlist(lapply(out_full_te2, `[`, TRUE, "std.error")), na.rm = TRUE)
+xmax <- max(unlist(lapply(out_full_te2, `[`, TRUE, "estimate")), na.rm = TRUE) + 
+  2* max(unlist(lapply(out_full_te2, `[`, TRUE, "std.error")), na.rm = TRUE)
 
 for(i in 1:length(out_full_te2)){
   xest <- out_full_te2[[i]][,"estimate"]
@@ -295,42 +301,44 @@ for(i in 1:length(out_full_te2)){
   x1 <- out_full_te2[[i]][,"estimate"] + 1.96*out_full_te2[[i]][,"std.error"]
   margin <- 2*mean(out_full_te2[[i]][,"std.error"])
   
-plot(x = xest, 
-     y = 1:length(xest),
-     yaxt = "n",
-     xlab = "Estimates",
-     ylab = "",
-     xlim = c(xmin,
-              xmax), 
-     main = paste0("Arm ", i+1, " ATE wrt arm 1"))
-segments(y0 = 1:length(xest),
-         y1 = 1:length(xest),
-         x0 = x0,
-         x1 = x1)
-axis(2, at = 1:length(xest),
-     labels = names(xest), las = 2)
-abline(v = data$mus[i+1] - data$mus[1], col = "#FF3300", lty = "dashed")
-
+  plot(x = xest, 
+       y = 1:length(xest),
+       yaxt = "n",
+       xlab = "Estimates",
+       ylab = "",
+       xlim = c(xmin,
+                xmax), 
+       main = paste0("Arm ", i+1, " ATE wrt arm 1"))
+  segments(y0 = 1:length(xest),
+           y1 = 1:length(xest),
+           x0 = x0,
+           x1 = x1)
+  axis(2, at = 1:length(xest),
+       labels = names(xest), las = 2)
+  abline(v = data$mus[i+1] - data$mus[1], col = "#FF3300", lty = "dashed")
+  
 }
 suppressWarnings(par(op))
 ```
 
 
-## For the non-contextual case
+## For the non-contextual case. 
 
 We also run a non-contextual experiment, using the same original data. 
 The algorithm used is Thompson sampling, without contexts. 
 ```{r non-contextual_experiment, fig.width=7, fig.height=5, out.width = "100%"}
 # For a noncontextual experiment, we simply omit the context argument
 results <- run_experiment(ys = ys, 
-                          floor_start = 0.5, 
-                          floor_decay = 0.9, 
+                          floor_start = 0.9, 
+                          floor_decay = 0.05, 
                           batch_sizes = batch_sizes)
 
 # plot the cumulative assignment graph for every arm and every batch size, 
 # x-axis is the number of observations, y-axis is the cumulative assignment
 plot_cumulative_assignment(results, batch_sizes)
 ```
+
+### Estimating response. 
 
 ```{r noncontextual_means_estimation}
 # Get estimates for policies
@@ -390,22 +398,22 @@ for(i in 1:length(out_full)){
   x1 <- out_full[[i]][,"estimate"] + 1.96*out_full[[i]][,"std.error"]
   margin <- 2*mean(out_full[[i]][,"std.error"])
   
-plot(x = xest, 
-     y = 1:length(xest),
-     yaxt = "n",
-     xlab = "Estimates",
-     ylab = "",
-     xlim = c(xmin,
-              xmax), 
-     main = paste0("Arm ", i, " mean response"))
-segments(y0 = 1:length(xest),
-         y1 = 1:length(xest),
-         x0 = x0,
-         x1 = x1)
-axis(2, at = 1:length(xest),
-     labels = names(xest), las = 2)
-abline(v = data$mus[i], col = "#FF3300", lty = "dashed")
-
+  plot(x = xest, 
+       y = 1:length(xest),
+       yaxt = "n",
+       xlab = "Estimates",
+       ylab = "",
+       xlim = c(xmin,
+                xmax), 
+       main = paste0("Arm ", i, " mean response"))
+  segments(y0 = 1:length(xest),
+           y1 = 1:length(xest),
+           x0 = x0,
+           x1 = x1)
+  axis(2, at = 1:length(xest),
+       labels = names(xest), las = 2)
+  abline(v = data$mus[i], col = "#FF3300", lty = "dashed")
+  
 }
 suppressWarnings(par(op))
 ```
@@ -446,10 +454,10 @@ weighting.
 par(mar = c(5,11,4,2) + 0.1)
 
 # set some plotting parameters across plots
-xmin <- min(unlist(lapply(out_full_te1, `[`, TRUE, "estimate"))) - 
-  2* max(unlist(lapply(out_full_te1, `[`, TRUE, "std.error")))
-xmax <- max(unlist(lapply(out_full_te1, `[`, TRUE, "estimate"))) + 
-  2* max(unlist(lapply(out_full_te1, `[`, TRUE, "std.error")))
+xmin <- min(unlist(lapply(out_full_te1, `[`, TRUE, "estimate")), na.rm = TRUE) - 
+  2* max(unlist(lapply(out_full_te1, `[`, TRUE, "std.error")), na.rm = TRUE)
+xmax <- max(unlist(lapply(out_full_te1, `[`, TRUE, "estimate")), na.rm = TRUE) + 
+  2* max(unlist(lapply(out_full_te1, `[`, TRUE, "std.error")), na.rm = TRUE)
 
 for(i in 1:length(out_full_te1)){
   xest <- out_full_te1[[i]][,"estimate"]
@@ -457,22 +465,22 @@ for(i in 1:length(out_full_te1)){
   x1 <- out_full_te1[[i]][,"estimate"] + 1.96*out_full_te1[[i]][,"std.error"]
   margin <- 2*mean(out_full_te1[[i]][,"std.error"])
   
-plot(x = xest, 
-     y = 1:length(xest),
-     yaxt = "n",
-     xlab = "Estimates",
-     ylab = "",
-     xlim = c(xmin,
-              xmax), 
-     main = paste0("Arm ", i+1, " ATE wrt arm 1"))
-segments(y0 = 1:length(xest),
-         y1 = 1:length(xest),
-         x0 = x0,
-         x1 = x1)
-axis(2, at = 1:length(xest),
-     labels = names(xest), las = 2)
-abline(v = data$mus[i+1] - data$mus[1], col = "#FF3300", lty = "dashed")
-
+  plot(x = xest, 
+       y = 1:length(xest),
+       yaxt = "n",
+       xlab = "Estimates",
+       ylab = "",
+       xlim = c(xmin,
+                xmax), 
+       main = paste0("Arm ", i+1, " ATE wrt arm 1"))
+  segments(y0 = 1:length(xest),
+           y1 = 1:length(xest),
+           x0 = x0,
+           x1 = x1)
+  axis(2, at = 1:length(xest),
+       labels = names(xest), las = 2)
+  abline(v = data$mus[i+1] - data$mus[1], col = "#FF3300", lty = "dashed")
+  
 }
 suppressWarnings(par(op))
 ```
@@ -483,10 +491,10 @@ scores separately, and then take the difference.
 par(mar = c(5,11,4,2) + 0.1)
 
 # set some plotting parameters across plots
-xmin <- min(unlist(lapply(out_full_te2, `[`, TRUE, "estimate"))) - 
-  2* max(unlist(lapply(out_full_te2, `[`, TRUE, "std.error")))
-xmax <- max(unlist(lapply(out_full_te2, `[`, TRUE, "estimate"))) + 
-  2* max(unlist(lapply(out_full_te2, `[`, TRUE, "std.error")))
+xmin <- min(unlist(lapply(out_full_te2, `[`, TRUE, "estimate")), na.rm = TRUE) - 
+  2* max(unlist(lapply(out_full_te2, `[`, TRUE, "std.error")), na.rm = TRUE)
+xmax <- max(unlist(lapply(out_full_te2, `[`, TRUE, "estimate")), na.rm = TRUE) + 
+  2* max(unlist(lapply(out_full_te2, `[`, TRUE, "std.error")), na.rm = TRUE)
 
 for(i in 1:length(out_full_te2)){
   xest <- out_full_te2[[i]][,"estimate"]
@@ -494,22 +502,22 @@ for(i in 1:length(out_full_te2)){
   x1 <- out_full_te2[[i]][,"estimate"] + 1.96*out_full_te2[[i]][,"std.error"]
   margin <- 2*mean(out_full_te2[[i]][,"std.error"])
   
-plot(x = xest, 
-     y = 1:length(xest),
-     yaxt = "n",
-     xlab = "Estimates",
-     ylab = "",
-     xlim = c(xmin,
-              xmax), 
-     main = paste0("Arm ", i+1, " ATE wrt arm 1"))
-segments(y0 = 1:length(xest),
-         y1 = 1:length(xest),
-         x0 = x0,
-         x1 = x1)
-axis(2, at = 1:length(xest),
-     labels = names(xest), las = 2)
-abline(v = data$mus[i+1] - data$mus[1], col = "#FF3300", lty = "dashed")
-
+  plot(x = xest, 
+       y = 1:length(xest),
+       yaxt = "n",
+       xlab = "Estimates",
+       ylab = "",
+       xlim = c(xmin,
+                xmax), 
+       main = paste0("Arm ", i+1, " ATE wrt arm 1"))
+  segments(y0 = 1:length(xest),
+           y1 = 1:length(xest),
+           x0 = x0,
+           x1 = x1)
+  axis(2, at = 1:length(xest),
+       labels = names(xest), las = 2)
+  abline(v = data$mus[i+1] - data$mus[1], col = "#FF3300", lty = "dashed")
+  
 }
 suppressWarnings(par(op))
 ```

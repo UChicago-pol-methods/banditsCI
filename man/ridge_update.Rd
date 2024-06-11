@@ -2,25 +2,25 @@
 % Please edit documentation in R/experiment_utils.R
 \name{ridge_update}
 \alias{ridge_update}
-\title{Ridge Regression Update for Arm Expected Rewards}
+\title{Updates ridge regression matrices.}
 \usage{
 ridge_update(R_A, b, xs, t, yobs, alpha)
 }
 \arguments{
-\item{R_A}{The current matrix A for an arm.}
+\item{R_A}{Matrix. Current matrix \code{R_A} for an arm. Must not contain NA values.}
 
-\item{b}{The current vector b for an arm.}
+\item{b}{Numeric vector. Current vector \code{b} for an arm.}
 
-\item{xs}{Matrix of observed covariates.}
+\item{xs}{Matrix. Covariates of shape \code{[A, p]}, where \code{A} is the number of observations and \code{p} is the number of features. Must not contain NA values.}
 
-\item{t}{The current time or instance.}
+\item{t}{Integer. Current time or instance.}
 
-\item{yobs}{The observed outcome for the current observation.}
+\item{yobs}{Numeric vector. Observed outcomes, length \code{A}. Must not contain NA values.}
 
-\item{alpha}{The ridge regression regularization parameter (default is 1).}
+\item{alpha}{Numeric. Ridge regression regularization parameter. Default is 1.}
 }
 \value{
-A list containing updated matrices `R_A`, `R_Ainv`, `b`, and `theta`.
+A list containing updated matrices \code{R_A}, \code{R_Ainv}, \code{b}, and \code{theta}.
 }
 \description{
 Given previous matrices and a new observation, updates the matrices for ridge regression.
@@ -31,7 +31,7 @@ p <- 3
 K <- 5
 init <- ridge_init(p, K)
 R_A <- init$R_A[[1]]
-b <- init$b[1,]
+b <- init$b[1, ]
 xs <- matrix(runif(10 * p), nrow = 10, ncol = p)
 yobs <- runif(10)
 t <- 1

@@ -2,28 +2,27 @@
 % Please edit documentation in R/experiment_utils.R
 \name{generate_bandit_data}
 \alias{generate_bandit_data}
-\title{generate_bandit_data Function}
+\title{Generate classification data.}
 \usage{
-generate_bandit_data(X = NULL, y = NULL, noise_std = 1, signal_strength = 1)
+generate_bandit_data(xs = NULL, y = NULL, noise_std = 1, signal_strength = 1)
 }
 \arguments{
-\item{X}{an optional matrix of covariates of shape [N, p], where N is the number of observations and p is the number of features}
+\item{xs}{Optional matrix. Covariates of shape \code{[A, p]}, where \code{A} is the number of observations and \code{p} is the number of features. Default is \code{NULL}. Must not contain NA values.}
 
-\item{y}{an optional vector of labels of length N}
+\item{y}{Optional vector. Labels of length \code{A}. Default is \code{NULL}. Must not contain NA values.}
 
-\item{noise_std}{a numeric value indicating the standard deviation of the noise added to the potential outcomes}
+\item{noise_std}{Numeric. Standard deviation of the noise added to the potential outcomes. Default is \code{1.0}. Must be a non-negative number.}
 
-\item{signal_strength}{a numeric value indicating the strength of the signal in the potential outcomes}
+\item{signal_strength}{Numeric. Strength of the signal in the potential outcomes. Default is \code{1.0}.}
 }
 \value{
-A list containing the generated data (xs, ys, muxs, A, p, K) and the true class probabilities (mus)
+A list containing the generated data (\code{xs}, \code{ys}, \code{muxs}, \code{A}, \code{p}, \code{K}) and the true class probabilities (\code{mus}).
 }
 \description{
-The generate_bandit_data function generates covariates and potential outcomes from a classification dataset.
+Generates covariates and potential outcomes for a classification dataset.
 }
 \examples{
-data <- generate_bandit_data(X=iris[,1:4], y=iris[,5], noise_std=0.1, signal_strength=1.0)
-xs <- data$data$xs
-ys <- data$data$ys
+data <- generate_bandit_data(xs = iris[,1:4], y = iris[,5], noise_std = 0.1,
+                             signal_strength = 1.0)
 
 }
