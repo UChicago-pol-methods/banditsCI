@@ -17,7 +17,7 @@
 #'
 #' @export
 LinTSModel <- function(K,
-                       p,
+                       p = NULL,
                        floor_start,
                        floor_decay,
                        num_mc = 100,
@@ -38,12 +38,12 @@ LinTSModel <- function(K,
   model <- list()
   model$num_mc <- num_mc
   model$K <- K
-  model$p <- p
   model$floor_start <- floor_start
   model$floor_decay <- floor_decay
   model$y <- replicate(K, matrix(0, nrow = 0, ncol = 1))
   model$ps <- replicate(K, matrix(0, nrow = 0, ncol = 1))
   if (is_contextual) {
+    model$p <- p
     model$mu <- matrix(0, nrow = K, ncol = p + 1)
     model$V <- array(0, dim = c(K, p + 1, p + 1))
     model$X <- replicate(K, matrix(0, nrow = 0, ncol = p))

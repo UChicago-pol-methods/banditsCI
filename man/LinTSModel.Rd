@@ -4,7 +4,14 @@
 \alias{LinTSModel}
 \title{Linear Thompson Sampling model.}
 \usage{
-LinTSModel(K, p, floor_start, floor_decay, num_mc = 100, is_contextual = TRUE)
+LinTSModel(
+  K,
+  p = NULL,
+  floor_start,
+  floor_decay,
+  num_mc = 100,
+  is_contextual = TRUE
+)
 }
 \arguments{
 \item{K}{Integer. Number of arms. Must be a positive integer.}

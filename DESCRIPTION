@@ -1,12 +1,15 @@
 Package: banditsCI
-Title: banditsCI
-Version: 0.1.0
-Author: Molly Offer-Westort <mollyow@uchicago.edu> and Yinghui Zhou <yz4690@columbia.edu>
-Maintainer: Molly Offer-Westort <mollyow@uchicago.edu>
-Description: This project is a R package contains a set of functions designed for bandit-based experiments, policy evaluation, adaptive weighting schemes, and more.
+Title: Bandit-Based Experiments and Policy Evaluation
+Version: 1.0.0
+Authors@R: c(
+    person("Molly", "Offer-Westort", email = "mollyow@uchicago.edu", role = c("aut", "cre")),
+    person("Yinghui", "Zhou", email = "yz4690@columbia.edu", role = c("aut")))
+Description: Provides functions for conducting bandit-based experiments, evaluating policies, and applying adaptive weighting schemes. Useful for researchers and practitioners working on reinforcement learning and experimental design. The methods implemented in this package are based on Zhan et al. (2021) <arXiv:2106.02029> and Hadad et al. (2021) <arXiv:1911.02768>. The code in this package is adapted from the original Python code available at <https://github.com/gsbDBI/adaptive-confidence-intervals> and <https://github.com/gsbDBI/contextual_bandits_evaluation>.
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.2.3
+URL: https://github.com/UChicago-pol-methods/banditsCI
+BugReports: https://github.com/UChicago-pol-methods/banditsCI/issues
 Suggests: 
     knitr (>= 1.43),
     rmarkdown (>= 2.23),

@@ -2,11 +2,7 @@ library(testthat)
 
 test_that("draw_thompson correctly draws arms for a LinTS agent with contextual vectors", {
   # Create a sample model
-  model <- LinTSModel(K = 5, p = 3,
-                      floor_start = 1,
-                      floor_decay = 0.9,
-                      num_mc = 100,
-                      is_contextual = TRUE)
+  model <- LinTSModel(K = 5, p = 3, floor_start = 1, floor_decay = 0.9, num_mc = 100, is_contextual = TRUE)
 
   # Generate sample data
   start <- 1
@@ -28,7 +24,7 @@ test_that("draw_thompson correctly draws arms for a LinTS agent with contextual 
 
 test_that("draw_thompson correctly draws arms for a non-contextual TS agent", {
   # Create a sample model
-  model <- LinTSModel(K = 5, p = 3, floor_start = 1, floor_decay = 0.9, num_mc = 100, is_contextual = FALSE)
+  model <- LinTSModel(K = 5, floor_start = 1, floor_decay = 0.9, num_mc = 100, is_contextual = FALSE)
 
   # Generate sample data
   start <- 1
@@ -43,7 +39,7 @@ test_that("draw_thompson correctly draws arms for a non-contextual TS agent", {
 
   expect_equal(length(result$ps), model$K)
   expect_true(all(abs(result$ps -
-                    min((model$floor_start / (model$floor_decay * start)),
-                        1/model$K)) < 1e-15))
+                        min((model$floor_start / (model$floor_decay * start)),
+                            1/model$K)) < 1e-15))
 
 })
