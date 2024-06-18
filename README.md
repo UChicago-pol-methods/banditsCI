@@ -57,7 +57,7 @@ library(banditsCI)
 
 The adaptive_utils.R contains estimator functions that are based on the [Adaptive Weighting in Contextual Bandits](https://github.com/gsbDBI/contextual_bandits_evaluation/blob/main/adaptive/inference.py) (in paper [Hadad, Vitor, et al. (2021)](https://arxiv.org/abs/1911.02768)):
 
-- AIPW (uniform weights), ![formula](https://latex.codecogs.com/svg.latex?\hat{Q}^{DR}_T(\pi):=\frac{1}{T}\sum_{t=1}^T\hat{\Gamma}_t(X_t,\pi))
+- AIPW (uniform weights), ![formula](https://latex.codecogs.com/svg.latex?\inline&space;\tiny&space;\hat{Q}^{DR}_T(\pi):=\frac{1}{T}\sum_{t=1}^T\hat{\Gamma}_t(X_t,\pi))
   - Estimated with argument `output_estimates()`, argument `uniform = TRUE)`.
   - Source: [Zhan et al. (2021)](https://arxiv.org/abs/2106.02029)
 - non-contextual variance minimizing estimates,
@@ -77,7 +77,7 @@ The adaptive_utils.R contains estimator functions that are based on the [Adaptiv
   - Estimated with argument `output_estimates()`, argument `contextual_stablevar = TRUE`.
   - Source: [Zhan et al. (2021)](https://arxiv.org/abs/2106.02029)
 - non_contextual_twopoint,
-  - "stick-breaking" procedure, $\frac{h_t^2}{e_t} = \left(1 - \sum_{s=1}^{t-1} \frac{h_s^2}{e_s} \right) \lambda_t$, where $\lambda_t$ satisfies $0 \leq \lambda_t < 1$ for all $1 \leq t \leq T - 1$, and $\lambda_T = 1$. ![formula](https://latex.codecogs.com/svg.image?\inline&space;\tiny&space;\lambda^{two-point}_t:=e_t\frac{1}{T-t&plus;1}&plus;(1-e_t)\frac{t^{-\alpha}}{t^{-\alpha}&plus;\frac{T^{1-\alpha}-t^{1-\alpha}}{1-\alpha}}).
+  - "stick-breaking" procedure, $\frac{h_t^2}{e_t} = \left(1 - \sum_{s=1}^{t-1} \frac{h_s^2}{e_s} \right) \lambda_t$, where $\lambda_t$ satisfies ![formula](https://latex.codecogs.com/svg.image?\inline&space;\tiny&space;&space;0\leqslant\lambda_t<1) for all $1 \leq t \leq T - 1$, and $\lambda_T = 1$. ![formula](https://latex.codecogs.com/svg.image?\inline&space;\tiny&space;\lambda^{two-point}_t:=e_t\frac{1}{T-t&plus;1}&plus;(1-e_t)\frac{t^{-\alpha}}{t^{-\alpha}&plus;\frac{T^{1-\alpha}-t^{1-\alpha}}{1-\alpha}}).
   - Estimated with argument `output_estimates()`, argument `non_contextual_twopoint = TRUE`.
   - Allocation schemes: `twopoint_stable_var_ratio` function.
   - Source: [Hadad, Vitor, et al. (2021)](https://arxiv.org/abs/1911.02768)
