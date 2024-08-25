@@ -8,8 +8,8 @@ Description: Provides functions for conducting bandit-based experiments, evaluat
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.2.3
-URL: https://github.com/UChicago-pol-methods/banditsCI, https://github.com/UChicago-pol-methods/bandits_CI
-BugReports: https://github.com/UChicago-pol-methods/bandits_CI/issues
+URL: https://github.com/UChicago-pol-methods/banditsCI
+BugReports: https://github.com/UChicago-pol-methods/banditsCI/issues
 Suggests: 
     knitr (>= 1.43),
     rmarkdown (>= 2.23),
