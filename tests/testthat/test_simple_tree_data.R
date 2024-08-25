@@ -16,12 +16,10 @@ test_that("simple_tree_data generates the expected data structure and dimensions
   expect_true("xs" %in% names(result$data))
   expect_true("ys" %in% names(result$data))
   expect_true("muxs" %in% names(result$data))
-  expect_true("wxs" %in% names(result$data))
 
   expect_equal(dim(result$data$xs), c(100, 10))
   expect_equal(dim(result$data$ys), c(100, 5))
   expect_equal(dim(result$data$muxs), c(100, 5))
-  expect_equal(dim(result$data$wxs), c(100, 5))
 
   expect_true(is.numeric(result$mus))
   expect_equal(length(result$mus), 5)

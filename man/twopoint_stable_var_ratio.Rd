@@ -2,25 +2,25 @@
 % Please edit documentation in R/adaptive_utils.R
 \name{twopoint_stable_var_ratio}
 \alias{twopoint_stable_var_ratio}
-\title{Calculate the allocation ratio for a two-point stable-variance bandit}
+\title{Calculate allocation ratio for a two-point stable-variance bandit.}
 \usage{
 twopoint_stable_var_ratio(A, e, alpha)
 }
 \arguments{
-\item{A}{the size of the experiment.}
+\item{A}{Integer. Size of the experiment. Must be a positive integer.}
 
-\item{e}{the empirical mean of the bad arm}
+\item{e}{Numeric. Empirical mean. Must be a numeric value.}
 
-\item{alpha}{the discount parameter}
+\item{alpha}{Numeric. Discount parameter.}
 }
 \value{
-the allocation ratio lambda
+Numeric vector. Allocation ratio lambda.
 }
 \description{
-This function calculates the allocation ratio for a two-point stable-variance bandit, given the empirical mean and the discount parameter alpha.
+Calculates the allocation ratio for a two-point stable-variance bandit, given the empirical mean and the discount parameter alpha.
 }
 \examples{
 # Calculate the allocation ratio for a two-point stable-variance bandit with e=0.1 and alpha=0.5
-twopoint_stable_var_ratio(0.1, 0.5)
+twopoint_stable_var_ratio(1000, 0.1, 0.5)
 
 }

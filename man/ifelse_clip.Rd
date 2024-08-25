@@ -2,22 +2,22 @@
 % Please edit documentation in R/adaptive_utils.R
 \name{ifelse_clip}
 \alias{ifelse_clip}
-\title{Clip lamb values between a minimum x and maximum y}
+\title{Clip lamb values between a minimum x and maximum y.}
 \usage{
 ifelse_clip(lamb, x, y)
 }
 \arguments{
-\item{lamb}{a numeric vector to be clipped}
+\item{lamb}{Numeric vector. Values to be clipped.}
 
-\item{x}{the lower bound of the clip range}
+\item{x}{Numeric. Lower bound of the clip range.}
 
-\item{y}{the upper bound of the clip range}
+\item{y}{Numeric. Upper bound of the clip range.}
 }
 \value{
-a clipped numeric vector
+Numeric vector. Clipped values.
 }
 \description{
-This function clips a numeric vector between two values.
+Clips a numeric vector between two values.
 }
 \examples{
 lamb <- c(1, 2, 3, 4, 5)

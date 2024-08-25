@@ -2,22 +2,23 @@
 % Please edit documentation in R/experiment_utils.R
 \name{calculate_balwts}
 \alias{calculate_balwts}
-\title{calculate_balwts Function}
+\title{Calculate balancing weight scores.}
 \usage{
 calculate_balwts(ws, probs)
 }
 \arguments{
-\item{ws}{a vector of length A containing the actions taken at each time step}
+\item{ws}{Integer vector. Indicates which arm was chosen for observations at each time \code{t}. Length \code{A}. Must not contain NA values.}
 
-\item{probs}{a matrix of shape [A, K] or [A, A, K] containing the true probabilities of each arm being chosen at each time step}
+\item{probs}{Numeric matrix or array. True probabilities of each arm being chosen at each time step. Shape \code{[A, K]} or \code{[A, A, K]}. Must not contain NA values.}
 }
 \value{
-A matrix of shape [A, K] or [A, A, K] containing the inverse probability score of pulling arms
+A matrix or array containing the inverse probability score of pulling arms.
 }
 \description{
-The calculate_balwts function calculates the inverse probability score of pulling arms, given the actions taken and the true probabilities of each arm being chosen.
+Calculates the inverse probability score of pulling arms, given the actions taken and the true probabilities of each arm being chosen.
 }
 \examples{
+set.seed(123)
 A <- 5
 K <- 3
 ws <- sample(1:K, A, replace = TRUE)

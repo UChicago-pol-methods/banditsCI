@@ -7,24 +7,30 @@
 aw_var(scores, estimate, policy, evalwts = NULL)
 }
 \arguments{
-\item{scores}{AIPW score, a numeric matrix of shape [A, K].}
+\item{scores}{Numeric matrix. AIPW scores, shape \code{[A, K]}. Must not contain NA values.}
 
-\item{estimate}{policy value estimate, a numeric scalar.}
+\item{estimate}{Numeric scalar. Policy value estimate.}
 
-\item{policy}{policy matrix pi(X_i, w), a numeric matrix of shape [A, K].}
+\item{policy}{Numeric matrix. Policy matrix \eqn{\pi(X_t, w)}, shape \code{[A, K]}. Must have the same shape as \code{scores} and must not contain NA values.}
 
-\item{evalwts}{non-contextual adaptive weights h_i, a numeric vector of length A, or NULL.}
+\item{evalwts}{Optional numeric vector. Non-contextual adaptive weights \eqn{h_t}, length \code{A}, or \code{NULL}.}
 }
 \value{
-variance of policy value estimate, a numeric scalar.
+Numeric scalar. Variance of policy value estimate.
 }
 \description{
-Compute the variance of a policy value estimate based on AIPW scores, a policy matrix, and
+Computes the variance of a policy value estimate based on AIPW scores, a policy matrix, and
 non-contextual adaptive weights.
 }
 \examples{
-scores <- matrix(c(0.5, 0.8, 0.6, 0.3, 0.9, 0.2, 0.5, 0.7, 0.4, 0.8, 0.2, 0.6), ncol = 3)
-policy <- matrix(c(0.2, 0.3, 0.5, 0.6, 0.1, 0.3, 0.4, 0.5, 0.1, 0.2, 0.7, 0.1), ncol = 3)
+scores <- matrix(c(0.5, 0.8, 0.6,
+                   0.3, 0.9, 0.2,
+                   0.5, 0.7, 0.4,
+                   0.8, 0.2, 0.6), ncol = 3, byrow = TRUE)
+policy <- matrix(c(0.2, 0.3, 0.5,
+                   0.6, 0.1, 0.3,
+                   0.4, 0.5, 0.1,
+                   0.2, 0.7, 0.1), ncol = 3, byrow = TRUE)
 estimate <- aw_estimate(scores = scores, policy = policy, evalwts = c(0.5, 1, 0.5, 1.5))
 aw_var(scores = scores, estimate = estimate, policy = policy, evalwts = c(0.5, 1, 0.5, 1.5))
 

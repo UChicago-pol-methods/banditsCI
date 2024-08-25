@@ -7,23 +7,22 @@
 aw_scores(yobs, ws, balwts, K, mu_hat = NULL)
 }
 \arguments{
-\item{yobs}{observed rewards, a numeric vector of length A.}
+\item{yobs}{Numeric vector. Observed rewards. Must not contain NA values.}
 
-\item{ws}{pulled arms, an integer vector of length A.}
+\item{ws}{Integer vector. Pulled arms. Must not contain NA values. Length must match \code{yobs}.}
 
-\item{balwts}{inverse probability score 1[W_t=w]/e_t(w) of pulling arms, a numeric matrix of
-shape [A, K].}
+\item{balwts}{Numeric matrix. Inverse probability score \eqn{1[W_t=w]/e_t(w)} of pulling arms, shape \code{[A, K]}, where \code{A} is the number of observations and \code{K} is the number of arms. Must not contain NA values.}
 
-\item{K}{number of arms, an integer.}
+\item{K}{Integer. Number of arms. Must be a positive integer.}
 
-\item{mu_hat}{plug-in estimator of arm outcomes, a numeric matrix of shape [A, K], or NULL.}
+\item{mu_hat}{Optional numeric matrix. Plug-in estimator of arm outcomes, shape \code{[A, K]}, or \code{NULL}. Must not contain NA values if provided.}
 }
 \value{
-scores AIPW scores, a numeric matrix of shape [A, K].
+Numeric matrix. AIPW scores, shape \code{[A, K]}.
 }
 \description{
-Compute AIPW/doubly robust scores based on observed rewards, pulled arms, and inverse
-probability scores. If mu_hat is provided, compute AIPW scores, otherwise compute IPW scores.
+Computes AIPW/doubly robust scores based on observed rewards, pulled arms, and inverse
+probability scores. If \code{mu_hat} is provided, compute AIPW scores, otherwise compute IPW scores.
 }
 \examples{
 aw_scores(yobs = c(0.5, 1, 0, 1.5), ws = c(1, 2, 2, 3),

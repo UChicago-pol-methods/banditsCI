@@ -2,37 +2,37 @@
 % Please edit documentation in R/adaptive_utils.R
 \name{calculate_continuous_X_statistics}
 \alias{calculate_continuous_X_statistics}
-\title{Return estimate and variance of policy evaluation via contextual weighting.}
+\title{Estimate/variance of policy evaluation via contextual weighting.}
 \usage{
 calculate_continuous_X_statistics(h, gammahat, policy)
 }
 \arguments{
-\item{h}{adaptive weights h_i(X_s), a numeric matrix of shape [A, A].}
+\item{h}{Numeric matrix. Adaptive weights \eqn{h_t(X_s)}, shape \code{[A, A]}. Must be a square matrix and must not contain NA values.}
 
-\item{gammahat}{AIPW score, a numeric matrix of shape [A, K].}
+\item{gammahat}{Numeric matrix. AIPW scores, shape \code{[A, K]}. Must not contain NA values.}
 
-\item{policy}{policy matrix pi(X_i, w), a numeric matrix of shape [A, K].}
+\item{policy}{Numeric matrix. Policy matrix \eqn{\pi(X_t, w)}, shape \code{[A, K]}. Must have the same shape as \code{gammahat} and must not contain NA values.}
 }
 \value{
-a named numeric vector with elements `estimate` and `var`, representing the estimated
+Named numeric vector with elements \code{estimate} and \code{var}, representing the estimated
 policy value and the variance of the estimate, respectively.
 }
 \description{
-Compute the estimate and variance of a policy evaluation based on adaptive weights, AIPW scores,
+Computes the estimate and variance of a policy evaluation based on adaptive weights, AIPW scores,
 and a policy matrix.
 }
 \examples{
 h <- matrix(c(0.4, 0.3, 0.2, 0.1,
-               0.2, 0.3, 0.3, 0.2,
-               0.5, 0.3, 0.2, 0.1,
-               0.1, 0.2, 0.1, 0.6), ncol = 4)
+              0.2, 0.3, 0.3, 0.2,
+              0.5, 0.3, 0.2, 0.1,
+              0.1, 0.2, 0.1, 0.6), ncol = 4, byrow = TRUE)
 scores <- matrix(c(0.5, 0.8, 0.6, 0.3,
                    0.9, 0.2, 0.5, 0.7,
-                   0.4, 0.8, 0.2, 0.6), ncol = 3)
+                   0.4, 0.8, 0.2, 0.6), ncol = 3, byrow = TRUE)
 policy <- matrix(c(0.2, 0.3, 0.5,
                    0.6, 0.1, 0.3,
                    0.4, 0.5, 0.1,
-                   0.2, 0.7, 0.1), ncol = 3)
+                   0.2, 0.7, 0.1), ncol = 3, byrow = TRUE)
 gammahat <- scores - policy
 calculate_continuous_X_statistics(h = h, gammahat = gammahat, policy = policy)
 

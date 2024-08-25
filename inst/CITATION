@@ -1,0 +1,8 @@
+bibentry(
+  bibtype  = "Manual",
+  title    = "banditsCI: Confidence Intervals for Adaptively Generated Data",
+  author   = "Molly Offer-Westort and Yinghui Zhou",
+  year     = 2024,
+  note     = "R package version 1.0.0",
+  url = "https://CRAN.R-project.org/package=banditsCI"
+)

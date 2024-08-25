@@ -2,7 +2,7 @@
 % Please edit documentation in R/experiment_utils.R
 \name{run_experiment}
 \alias{run_experiment}
-\title{run_experiment Function}
+\title{Run an experiment using Thompson Sampling.}
 \usage{
 run_experiment(
   ys,
@@ -14,33 +14,35 @@ run_experiment(
 )
 }
 \arguments{
-\item{ys}{a matrix of potential outcomes of shape [A, K], where A is the number of observations and K is the number of arms}
+\item{ys}{Matrix. Potential outcomes of shape \code{[A, K]}, where \code{A} is the number of observations and \code{K} is the number of arms. Must not contain NA values.}
 
-\item{floor_start}{a numeric value indicating the starting value of the floor}
+\item{floor_start}{Numeric. Starting value of the floor. Must be a positive number.}
 
-\item{floor_decay}{a numeric value indicating the decay rate of the floor}
+\item{floor_decay}{Numeric. Decay rate of the floor. Must be a positive number between 0 and 1.}
 
-\item{batch_sizes}{a vector of integers indicating the size of each batch}
+\item{batch_sizes}{Integer vector. Size of each batch. Must be positive integers.}
 
-\item{xs}{an optional matrix of contextual vectors for the observations, if the LinTSModel is contextual}
+\item{xs}{Optional matrix. Covariates of shape \code{[A, p]}, where \code{p} is the number of features, if the LinTSModel is contextual. Default is \code{NULL}. Must not contain NA values.}
 
-\item{balanced}{an optional boolean value indicating whether to balance the batches}
+\item{balanced}{Optional logical. Indicates whether to balance the batches. Default is \code{NULL}.}
 }
 \value{
-A list containing the pulled arms (ws), observed rewards (yobs), assignment probabilities (probs), and the fitted bandit model (fitted_bandit_model)
+A list containing the pulled arms (\code{ws}), observed rewards (\code{yobs}), assignment probabilities (\code{probs}), and the fitted bandit model (\code{fitted_bandit_model}).
 }
 \description{
-The run_experiment function runs a LinTS or non-contextual TS bandit experiment, given potential outcomes and covariates.
+Runs a LinTS or non-contextual TS bandit experiment, given potential outcomes and covariates.
 }
 \examples{
-ys <- matrix(rbinom(1000, 1, 0.5), ncol=5)
-xs <- matrix(rnorm(300), ncol=3)
-batch_sizes <- c(100, 200, 700)
-result <- run_experiment(ys=ys,
-                          floor_start=1,
-                          floor_decay=0.9,
-                          batch_sizes=batch_sizes,
-                          xs=xs,
-                          balanced=TRUE)
+set.seed(123)
+A <- 1000
+K <- 4
+xs <- matrix(runif(A * K), nrow = A, ncol = K)
+ys <- matrix(rbinom(A * K, 1, 0.5), nrow = A, ncol = K)
+batch_sizes <- c(250, 250, 250, 250)
+results <- run_experiment(ys = ys,
+                          floor_start = 5,
+                          floor_decay = 0.9,
+                          batch_sizes = batch_sizes,
+                          xs = xs)
 
 }

@@ -2,31 +2,36 @@
 % Please edit documentation in R/experiment_utils.R
 \name{update_thompson}
 \alias{update_thompson}
-\title{update_thompson Function}
+\title{Update linear Thompson Sampling model.}
 \usage{
 update_thompson(ws, yobs, model, xs = NULL, ps = NULL, balanced = NULL)
 }
 \arguments{
-\item{ws}{a vector of integers indicating which arm was chosen for each observation}
+\item{ws}{Integer vector. Indicates which arm was chosen for observations at each time \code{t}. Length \code{A}, where \code{A} is the number of observations. Must not contain NA values.}
 
-\item{yobs}{a vector of numeric values representing the observed rewards}
+\item{yobs}{Numeric vector. Observed outcomes, length \code{A}. Must not contain NA values.}
 
-\item{model}{a list containing the parameters of the LinTSModel}
+\item{model}{List. Contains the parameters of the LinTSModel.}
 
-\item{xs}{an optional matrix of contextual vectors for the observations, if the LinTSModel is contextual}
+\item{xs}{Optional matrix. Covariates of shape \code{[A, p]}, where \code{p} is the number of features, if the LinTSModel is contextual. Default is \code{NULL}. Must not contain NA values.}
 
-\item{ps}{an optional matrix of probabilities of selecting each arm for each observation, if the LinTSModel is balanced}
+\item{ps}{Optional matrix. Probabilities of selecting each arm for each observation, if the LinTSModel is balanced. Default is \code{NULL}.}
 
-\item{balanced}{a logical value indicating whether to use balanced Thompson Sampling or not}
+\item{balanced}{Logical. Indicates whether to use balanced Thompson Sampling. Default is \code{NULL}.}
 }
 \value{
-A list containing the updated parameters of the LinTSModel
+A list containing the updated parameters of the LinTSModel.
 }
 \description{
-The update_thompson function updates the parameters of a linear Thompson Sampling model for multi-armed bandit problems based on new observations.
+Updates the parameters of a linear Thompson Sampling model for multi-armed bandit problems based on new observations.
 }
 \examples{
-model <- LinTSModel(K=5, p=3, floor_start=1, floor_decay=0.9, num_mc=100, is_contextual=TRUE)
-model <- update_thompson(ws=c(3,2,1), yobs=c(1,0,1), model=model, xs=matrix(rnorm(9), ncol=3))
+set.seed(123)
+model <- LinTSModel(K = 5, p = 3, floor_start = 1, floor_decay = 0.9, num_mc = 100,
+                    is_contextual = TRUE)
+A <- 1000
+ws <- numeric(A)
+yobs <- numeric(A)
+model <- update_thompson(ws = ws, yobs = yobs, model = model)
 
 }
