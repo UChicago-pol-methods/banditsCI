@@ -5,7 +5,7 @@ Authors@R: c(
     person("Molly", "Offer-Westort", email = "mollyow@uchicago.edu", role = c("aut", "cre", "cph")),
     person("Yinghui", "Zhou", email = "yz4690@columbia.edu", role = c("aut")))
 Description: This package provides functions for conducting frequentist inference on adaptively generated data. The methods implemented in this package are based on Zhan et al. (2021) <arXiv:2106.02029> and Hadad et al. (2021) <arXiv:1911.02768>. For illustration, several functions for simulating non-contextual and contextual adaptive experiments using Thompson sampling are also supplied. 
-License: GPL-3 + file LICENSE
+License: MIT + file LICENSE
 Encoding: UTF-8
 RoxygenNote: 7.2.3
 URL: https://github.com/UChicago-pol-methods/banditsCI
