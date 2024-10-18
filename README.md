@@ -1,94 +1,102 @@
 # Confidence intervals with adaptively generated data
 
-This package contains a set of functions designed for running bandit-based experiments, along with conducting inference on policies evaluated on this adaptively generated data. 
+This package provides functions for conducting frequentist inference on adaptively generated data. 
+These functions produce point estimates and confidence intervals, using the methods proposed in [Zhan, Ruohan, et al. (2021)](https://arxiv.org/abs/2106.02029) and [Hadad, Vitor, et al. (2021)](https://arxiv.org/abs/1911.02768). 
+The code in this package is directly adapted from the original python code for those publications, documented at 
+ - [github.com/gsbDBI/adaptive-confidence-intervals](https://github.com/gsbDBI/adaptive-confidence-intervals) and 
+ - [github.com/gsbDBI/contextual_bandits_evaluation](https://github.com/gsbDBI/contextual_bandits_evaluation). 
 
-In particular, the functions implement methods for estimating confidence intervals using adaptively generated data, as proposed in [Zhan, Ruohan, et al. (2021)](https://arxiv.org/abs/2106.02029) and [Hadad, Vitor, et al. (2021)](https://arxiv.org/abs/1911.02768). 
-The code in this package is directly adapted from the original python code for those projects documented at [github.com/gsbDBI/adaptive-confidence-intervals](https://github.com/gsbDBI/adaptive-confidence-intervals) and [github.com/gsbDBI/contextual_bandits_evaluation](https://github.com/gsbDBI/contextual_bandits_evaluation). 
+For illustration, several functions for simulating non-contextual and contextual adaptive experiments using Thompson sampling are also supplied. 
 
 ### Installation
 
 The latest release of the package can be installed through CRAN:
 
 ```R
-install.packages(banditsCI")
+install.packages("banditsCI")
 ```
 
-The current development version can be installed from source using devtools.
+The current development version can be installed from source using devtools:
 
 ```R
-devtools::install_github("Uchicago-pol-methods/contextual_bandits_evaluation")
+devtools::install_github("Uchicago-pol-methods/banditsCI")
 ```
 ### Usage Examples
 
 ```r
 library(banditsCI)
+set.seed(60637)
 
 # Generate synthetic data. 
+data <- generate_bandit_data(xs = as.matrix(iris[,1:4]), 
+                             y = as.numeric(iris[,5]))
 
-# Run an experiment. 
+# Run a simulated (non-contextual) experiment. 
+results <- run_experiment(ys = data$data$ys,
+                          floor_start = 1/data$data$K,
+                          floor_decay = 0.9,
+                          batch_sizes = c(50, 50, 50))
 
 # Evaluate mean response under treatment arms. 
+## Balancing weights
+balwts <- calculate_balwts(results$ws, results$probs)
+## ipw scores
+aipw_scores <- aw_scores(
+  ws = results$ws, 
+  yobs = results$yobs, 
+  K = ncol(results$ys),
+  balwts = balwts)
+
+## The policies we're evaluating
+policy1 <- lapply(1:data$data$K, function(x) {
+  pol_mat <- matrix(0, nrow = data$data$A, ncol = data$data$K)
+  pol_mat[,x] <- 1
+  pol_mat
+}
+) 
+
+## Estimation
+out_full <- output_estimates(
+  policy1 = policy1, 
+  gammahat = aipw_scores, 
+  probs_array = results$probs,
+  floor_decay = 0.9)
+
+out_full
 
 ```
 
-
-### Functions
-- [Bandit-Based Experiments](#bandit-based-experiments)
-- [Policy Evaluation](#policy-evaluation)
-- [Estimators](#estimators)
-- [Visualization](#visualization)
-- [Replication](#replication)
-- [References](#references)
-
-### Bandit-Based Experiments
-
-- **run_experiment**: Runs an experiment on simulated data using a contextual or non-contextual Thompson Sampling model for allocation.
-  - **generate_bandit_data**: Generates synthetic data with a simple decision tree for simulated experiments.
-  - **simple_tree_data**: Generates synthetic data with a simple decision tree for simulated experiments.
+For a more detailed description of how to use the package functions, see the [vignette](https://github.com/UChicago-pol-methods/banditsCI/tree/main/vignettes). 
 
 
-### Policy Evaluation
+### Estimation
 
-- **output_estimates**: Estimates treatment effects using augmented-inverse probability-weighted estimators with different weighting schemes. Can be used for both single-arm value estimation and contrast evaluation between treatments.
-  - **ridge_muhat_lfo_pai**: Leave-future-out ridge-based estimates for arm expected rewards. 
+We produce estimates under different adaptive weighting schemes in the `output_estimates()` function. 
+Weighting schemes include:
 
+- (Augmented) Inverse Probability Weighted estimates, with uniform weights, 
+  - Estimated with argument `uniform = TRUE`.
+- Non-contextual variance minimizing estimates,
+  - Estimated with argument `non_contextual_minvar = TRUE`.
+  - Source: [Zhan et al. (2021)](https://arxiv.org/abs/2106.02029) Equation (6) with `MinVar` function $\phi(v) = \sqrt{1/v}$
+- Contextual variance minimizing estimates,
+  - Estimated with argument `contextual_minvar = TRUE`.
+  - Source: [Zhan et al. (2021)](https://arxiv.org/abs/2106.02029) Equation (11) with `MinVar` function $\phi(v) = \sqrt{1/v}$
+- Non-contextual variance stabilizing estimates,
+  - Estimated with argument `non_contextual_stablevar  = TRUE`.
+  - Source: [Zhan et al. (2021)](https://arxiv.org/abs/2106.02029) Equation (6) with `StableVar` function $\phi(v) = 1/v$
+- Contextual variance stabilizing estimates,
+  - Estimated with argument `contextual_stablevar = TRUE`.
+  - Source: [Zhan et al. (2021)](https://arxiv.org/abs/2106.02029) Equation (11) with `StableVar` function $\phi(v) = 1/v$
+- Non-contextual two-point estimates using a "stick-breaking" procedure
+  - Estimated with argument `non_contextual_twopoint = TRUE`.
+  - Source: [Hadad, Vitor, et al. (2021)](https://arxiv.org/abs/1911.02768) Equation (18)
 
-### Estimators
-
-The adaptive_utils.R contains estimator functions that are based on the [Adaptive Weighting in Contextual Bandits](https://github.com/gsbDBI/contextual_bandits_evaluation/blob/main/adaptive/inference.py) (in paper [Hadad, Vitor, et al. (2021)](https://arxiv.org/abs/1911.02768)):
-
-- AIPW (uniform weights), ![formula](https://latex.codecogs.com/svg.latex?\inline&space;\tiny&space;\hat{Q}^{DR}_T(\pi):=\frac{1}{T}\sum_{t=1}^T\hat{\Gamma}_t(X_t,\pi))
-  - Estimated with argument `output_estimates()`, argument `uniform = TRUE)`.
-  - Source: [Zhan et al. (2021)](https://arxiv.org/abs/2106.02029)
-- non-contextual variance minimizing estimates,
-  - $\phi(v) = 1/v$ yields weights $h_t$ that approximately minimize the variance of $\hat{Q}^{NC}_T$ (![formula](https://latex.codecogs.com/svg.image?\inline&space;\tiny&space;\hat{Q}^{NC}_T(\pi):=\sum_{t=1}^{T}\frac{h_t\hat{\Gamma}_t(X_t,\pi)}{\sum_{t=1}^{T}h_s})). Non-contextual variance minimizing estimates: ![formula](https://latex.codecogs.com/svg.image?\inline&space;\tiny&space;$h_t:=\phi\left(\mathbb{E}w\left[\frac{\pi^2(X_t;w)}{e_t(X_t;w)}|H{t-1}\right]\right)$). A feasible approximation in the simulation: ![formula](https://latex.codecogs.com/svg.image?\inline&space;\tiny&space;$\tilde{h}_t:=\phi\left(\frac{1}{t-1}\sum_{s=1}^{t-1}\sum_w\frac{\pi^2(X_s;w)}{e_t(X_s;w)}\right)$).
-  - Estimated with argument `output_estimates()`, argument `non_contextual_minvar = TRUE)`.
-  - Source: [Zhan et al. (2021)](https://arxiv.org/abs/2106.02029)
-- contextual minvar,
-  - $\phi(v) = 1/v$ yields weights $h_t$ that approximately minimize the variance of $\hat{Q}^{\mathcal{C}}_T (\pi)$ (![formula](https://latex.codecogs.com/svg.image?\inline&space;\tiny&space;\hat{Q}^{\mathcal{C}}_T(\pi)=\sum_{t=1}^T\frac{h_t(X_t)\hat{\Gamma}_t(X_t,\pi)}{\sum_{t=1}^T&space;h_s(X_t)})). Contextual variance proxy: ![formula](https://latex.codecogs.com/svg.image?\inline&space;\tiny&space;h_t(x)=\phi\left(\sum_w\frac{\pi^2(x,w)}{e_t(x,w)}\right),\quad&space;x\in\mathcal{X}).
-  - Estimated with argument `output_estimates()`, argument `contextual_minvar = TRUE`.
-  - Source: [Zhan et al. (2021)](https://arxiv.org/abs/2106.02029)
-- non-contextual stablevar,
-  - $\phi(v) = 1/\sqrt{v}$ yields weights $h_t$ that approximately standardize the terms of $\hat{Q}^{NC}_T$ (![formula](https://latex.codecogs.com/svg.image?\inline&space;\tiny&space;\hat{Q}^{NC}_T(\pi):=\sum_{t=1}^{T}\frac{h_t\hat{\Gamma}_t(X_t,\pi)}{\sum_{t=1}^{T}h_s})). Non-contextual variance minimizing estimates: ![formula](https://latex.codecogs.com/svg.image?\inline&space;\tiny&space;$h_t:=\phi\left(\mathbb{E}w\left[\frac{\pi^2(X_t;w)}{e_t(X_t;w)}|H{t-1}\right]\right)$). A feasible approximation in the simulation: ![formula](https://latex.codecogs.com/svg.image?\inline&space;\tiny&space;$\tilde{h}_t:=\phi\left(\frac{1}{t-1}\sum_{s=1}^{t-1}\sum_w\frac{\pi^2(X_s;w)}{e_t(X_s;w)}\right)$).
-  - Estimated with argument `output_estimates()`, argument `non_contextual_stablevar  = TRUE`.
-  - Source: [Zhan et al. (2021)](https://arxiv.org/abs/2106.02029)
-- contextual stablevar,
-  - $\phi(v) = 1/\sqrt{v}$ yields weights $h_t$ that approximately standardize the terms of $\hat{Q}^{\mathcal{C}}_T (\pi)$(![formula](https://latex.codecogs.com/svg.image?\inline&space;\tiny&space;\hat{Q}^{\mathcal{C}}_T(\pi)=\sum_{t=1}^T\frac{h_t(X_t)\hat{\Gamma}_t(X_t,\pi)}{\sum_{t=1}^T&space;h_s(X_t)})). Contextual variance proxy: ![formula](https://latex.codecogs.com/svg.image?\inline&space;\tiny&space;h_t(x)=\phi\left(\sum_w\frac{\pi^2(x,w)}{e_t(x,w)}\right),\quad&space;x\in\mathcal{X}). 
-  - Estimated with argument `output_estimates()`, argument `contextual_stablevar = TRUE`.
-  - Source: [Zhan et al. (2021)](https://arxiv.org/abs/2106.02029)
-- non_contextual_twopoint,
-  - "stick-breaking" procedure, $\frac{h_t^2}{e_t} = \left(1 - \sum_{s=1}^{t-1} \frac{h_s^2}{e_s} \right) \lambda_t$, where $\lambda_t$ satisfies ![formula](https://latex.codecogs.com/svg.image?\inline&space;\tiny&space;&space;0\leqslant\lambda_t<1) for all $1 \leq t \leq T - 1$, and $\lambda_T = 1$. ![formula](https://latex.codecogs.com/svg.image?\inline&space;\tiny&space;\lambda^{two-point}_t:=e_t\frac{1}{T-t&plus;1}&plus;(1-e_t)\frac{t^{-\alpha}}{t^{-\alpha}&plus;\frac{T^{1-\alpha}-t^{1-\alpha}}{1-\alpha}}).
-  - Estimated with argument `output_estimates()`, argument `non_contextual_twopoint = TRUE`.
-  - Allocation schemes: `twopoint_stable_var_ratio` function.
-  - Source: [Hadad, Vitor, et al. (2021)](https://arxiv.org/abs/1911.02768)
-
-### Visualization
-
-- **plot_cumulative_assignment**: Plots the cumulative assignments for different arms over time.
 
 ### Replication
 
-We illustrate near-exact replication (with minor modifications) of simulated experimental results in the original papers. The code for the replication is available in the following repositories:
+We illustrate precise replication of simulated experimental results using the code from the original papers (we modify python notebooks for the benefit of illustration). 
+The code for the replication is available in the following repositories:
 
 - **Non-contextual replication**: [Replication with python experiment Data](https://github.com/UChicago-pol-methods/adaptive-confidence-intervals)
 - **Contextual replication**: [Replication with python experiment Data](https://github.com/Uchicago-pol-methods/contextual_bandits_evaluation)

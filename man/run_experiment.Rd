@@ -16,9 +16,9 @@ run_experiment(
 \arguments{
 \item{ys}{Matrix. Potential outcomes of shape \code{[A, K]}, where \code{A} is the number of observations and \code{K} is the number of arms. Must not contain NA values.}
 
-\item{floor_start}{Numeric. Starting value of the floor. Must be a positive number.}
+\item{floor_start}{Numeric. Specifies the initial value for the assignment probability floor. It ensures that at the start of the process, no assignment probability falls below this threshold. Must be a positive number.}
 
-\item{floor_decay}{Numeric. Decay rate of the floor. Must be a positive number between 0 and 1.}
+\item{floor_decay}{Numeric. Decay rate of the floor. The floor decays with the number of observations in the experiment such that at each point in time, the applied floor is: \code{floor_start/(s^{floor_decay})}, where \code{s} is the starting index for a batched experiment, or the observation index for an online experiment. Must be a number between 0 and 1 (inclusive).}
 
 \item{batch_sizes}{Integer vector. Size of each batch. Must be positive integers.}
 
@@ -40,7 +40,7 @@ xs <- matrix(runif(A * K), nrow = A, ncol = K)
 ys <- matrix(rbinom(A * K, 1, 0.5), nrow = A, ncol = K)
 batch_sizes <- c(250, 250, 250, 250)
 results <- run_experiment(ys = ys,
-                          floor_start = 5,
+                          floor_start = 1/K,
                           floor_decay = 0.9,
                           batch_sizes = batch_sizes,
                           xs = xs)

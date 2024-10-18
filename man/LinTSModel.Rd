@@ -18,9 +18,9 @@ LinTSModel(
 
 \item{p}{Integer. Dimension of the contextual vector, if \code{is_contextual} is set to \code{TRUE}. Otherwise, \code{p} is ignored. Must be a positive integer.}
 
-\item{floor_start}{Numeric. Starting value of the floor. Must be a positive number.}
+\item{floor_start}{Numeric. Specifies the initial value for the assignment probability floor. It ensures that at the start of the process, no assignment probability falls below this threshold. Must be a positive number.}
 
-\item{floor_decay}{Numeric. Decay rate of the floor. Must be a positive number between 0 and 1.}
+\item{floor_decay}{Numeric. Decay rate of the floor. The floor decays with the number of observations in the experiment such that at each point in time, the applied floor is: \code{floor_start/(s^{floor_decay})}, where \code{s} is the starting index for a batched experiment, or the observation index for an online experiment. Must be a number between 0 and 1 (inclusive).}
 
 \item{num_mc}{Integer. Number of Monte Carlo simulations used to approximate the expected reward. Must be a positive integer. Default is 100.}
 
@@ -33,7 +33,7 @@ A list containing the parameters of the LinTSModel.
 Creates a linear Thompson Sampling model for multi-armed bandit problems.
 }
 \examples{
-model <- LinTSModel(K = 5, p = 3, floor_start = 1, floor_decay = 0.9, num_mc = 100,
+model <- LinTSModel(K = 5, p = 3, floor_start = 1/5, floor_decay = 0.9, num_mc = 100,
                     is_contextual = TRUE)
 
 }

@@ -39,9 +39,9 @@ data <- simple_tree_data(
   noise_std = 0.25)
 ```
 
-Alternatively, we could use the `generate_bandit_data()` function to generate data 
-based on a `y` vector and `xs` matrix, potentially useful if we had real data 
-from a pilot (this code is not evaluated here).
+Alternatively, we could use the `generate_bandit_data()` function to generate 
+data based on a `y` vector and `xs` matrix, potentially useful if we had real 
+data from a pilot (this code is not evaluated here).
 ```{r simlindata, eval = FALSE}
 # # Interacted linear model
 # xs <- matrix(rnorm(A*p), ncol=p) # - X: covariates of shape [A, p]
@@ -62,8 +62,8 @@ The algorithm used here is a version of linear Thompson sampling.
 xs <- data[[1]]$xs
 ys <- data[[1]]$ys
 results <- run_experiment(ys = ys, 
-                          floor_start = 0.9, 
-                          floor_decay = 0.05, 
+                          floor_start = 0.025, 
+                          floor_decay = 0, 
                           batch_sizes = batch_sizes, 
                           xs = xs)
 
@@ -77,8 +77,18 @@ The overall assignment plot over-assigns to the first arm, but we note that our
 groups are not balanced: the group for whom arm 1 is best is somewhat larger. 
 
 ```{r best_arm}
-table(apply(data$data$muxs, 1, which.max))
+table(apply(data[[1]]$muxs, 1, which.max))
 ```
+
+```{r illustrate_data, fig.width=7, fig.height=5, out.width = "100%"}
+muxs <- apply(data[[1]]$muxs, 1, which.max)
+cols <- c("#00000080", paste0(palette()[2:4], "4D")) # for transparency
+plot(xs[,1], xs[,2], col = cols[muxs], pch = 20, xlab = "X1", ylab = "X2", type = "p", 
+     cex = 0.5)
+graphics::legend("topleft", legend = 1:K, col=1:K, pch=19, title = "Best arm")
+
+``` 
+
 
 
 We now create separate assignment plots based on the true best arm; within each 
@@ -89,7 +99,7 @@ conditions.
 ```{r contextual_assignment_by_arm, fig.width=7, fig.height=5, out.width = "45%"}
 for(k in 1:K){
   
-  idx <- (data$data$muxs[,k]==1)
+  idx <- (data[[1]]$muxs[,k]==1)
   batch_sizes_w <- lapply(split(idx, cut(1:sum(batch_sizes), 
                                          c(0,cumsum(batch_sizes))) ), sum)
   
@@ -97,11 +107,12 @@ for(k in 1:K){
   dat[cbind(1:sum(idx), results$ws[idx])] <- 1
   dat <- apply(dat, 2, cumsum)
   graphics::matplot(dat, type = c("l"), col =1:K, 
+                    lwd = 3, 
                     xlab = "Observations",
                     ylab = "Cumulative assignment",
                     main = paste0("Assignment for arm ", k))
   graphics::abline(v=cumsum(batch_sizes_w), col="#00ccff")
-  graphics::legend("topleft", legend = 1:K, col=1:K, lty=1:K)
+  graphics::legend("topleft", legend = 1:K, col=1:K, lty=1:K, lwd = 3)
   
 }
 ```
@@ -110,8 +121,8 @@ for(k in 1:K){
 We then generate augmented inverse probability weighted (AIPW) scores, using a
 conditional means model and known assignment probabilities. 
 Here, the conditional means are estimated from a ridge model, which estimates 
-conditional means for each observation based only on batchwise history, using the 
-`ridge_muhat_lfo_pai()` function. 
+conditional means for each observation based only on batchwise history, using 
+the `ridge_muhat_lfo_pai()` function. 
 Other conditional means models can also be used. 
 ```{r contextual_means_estimation}
 # Get estimates for policies
@@ -167,7 +178,7 @@ out_full <- output_estimates(
   policy1 = policy1, 
   gammahat = aipw_scores, 
   probs_array = results$probs,
-  floor_decay = 0.05)
+  floor_decay = 0)
 ```
 
 We first look at estimates of mean response under each of the treatment arms. 
@@ -227,7 +238,7 @@ out_full_te1 <- output_estimates(
   contrasts = "combined",
   gammahat = aipw_scores, 
   probs_array = results$probs,
-  floor_decay = 0.05,
+  floor_decay = 0,
   non_contextual_twopoint = FALSE)
 
 ## The second approach takes asymptotically normal inference about 
@@ -238,7 +249,7 @@ out_full_te2 <- output_estimates(
   contrasts = "separate",
   gammahat = aipw_scores, 
   probs_array = results$probs,
-  floor_decay = 0.05)
+  floor_decay = 0)
 ```
 
 Under the first approach, we calculate AIPW scores under both treatment(s) and 
@@ -248,7 +259,8 @@ weighting.
 Note: We do not used this combined estimation method with the non-contextual
 two-point estimation approach, which produces unstable estimates, and is not 
 supported in the original source. We can do non-contextual two-point estimation 
-when calculating separate adaptive weights for contrasts 
+when calculating separate adaptive weights for contrasts, however we recommend 
+using other estimation procedures in contextual adaptive settings. 
 ```{r contextual_ATEs_plot1, fig.width=7, fig.height=5, out.width = "45%"}
 par(mar = c(5,11,4,2) + 0.1)
 
@@ -329,8 +341,8 @@ The algorithm used is Thompson sampling, without contexts.
 ```{r non-contextual_experiment, fig.width=7, fig.height=5, out.width = "100%"}
 # For a noncontextual experiment, we simply omit the context argument
 results <- run_experiment(ys = ys, 
-                          floor_start = 0.9, 
-                          floor_decay = 0.05, 
+                          floor_start = 0.025, 
+                          floor_decay = 0, 
                           batch_sizes = batch_sizes)
 
 # plot the cumulative assignment graph for every arm and every batch size, 
@@ -345,8 +357,8 @@ plot_cumulative_assignment(results, batch_sizes)
 # inverse probability score 1[W_t=w]/e_t(w) of pulling arms, shape [A, K]
 balwts <- calculate_balwts(results$ws, results$probs)
 
-# Generate doubly robust scores; we don't use the contexts for a conditional 
-# means model
+# Generate doubly robust scores; we don't use the contexts for a means model 
+# here, but we could, even though they are not used in assignment. 
 aipw_scores <- aw_scores(
   ws = results$ws, 
   yobs = results$yobs, 
@@ -376,7 +388,7 @@ out_full <- output_estimates(
   policy1 = policy1, 
   gammahat = aipw_scores, 
   probs_array = results$probs,
-  floor_decay = 0.05)
+  floor_decay = 0)
 ```
 
 We first look at estimates of mean response under each of the treatment arms.
@@ -435,7 +447,7 @@ out_full_te1 <- output_estimates(
   contrasts = "combined",
   gammahat = aipw_scores, 
   probs_array = results$probs,
-  floor_decay = 0.05)
+  floor_decay = 0)
 
 ## The second approach takes asymptotically normal inference about 
 ## \delta(w_1, w_2): \delta ^ hat (w_1, w_2) = Q ^ hat (w_1) - Q ^ hat (w_2)
@@ -445,7 +457,7 @@ out_full_te2 <- output_estimates(
   contrasts = "separate",
   gammahat = aipw_scores, 
   probs_array = results$probs,
-  floor_decay = 0.05)
+  floor_decay = 0)
 ```
 
 First take the difference in AIPW scores, and then conduct adaptive 

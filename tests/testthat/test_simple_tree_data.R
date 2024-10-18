@@ -5,7 +5,7 @@ test_that("simple_tree_data generates the expected data structure and dimensions
   set.seed(123)
 
   # Call the simple_tree_data function
-  result <- simple_tree_data(A = 100, K = 5, p = 10, noise_std = 1.0, split = 1.676, signal_strength = 1.0, seed = 456, noise_form = 'normal')
+  result <- simple_tree_data(A = 100, K = 5, p = 10, noise_std = 1.0, split = 1.676, signal_strength = 1.0, noise_form = 'normal')
 
   # Perform assertions to check the output structure and dimensions
   expect_true(is.list(result))
@@ -26,7 +26,7 @@ test_that("simple_tree_data generates the expected data structure and dimensions
 })
 
 test_that("simple_tree_data throws an error for invalid input parameters", {
-  expect_error(simple_tree_data(A = 100, K = 3, p = 10, noise_std = 1.0, split = 1.676, signal_strength = 1.0, seed = 456, noise_form = 'normal'))
-  expect_error(simple_tree_data(A = 100, K = 5, p = 1, noise_std = 1.0, split = 1.676, signal_strength = 1.0, seed = 456, noise_form = 'normal'))
-  expect_error(simple_tree_data(A = 100, K = 5, p = 10, noise_std = 1.0, split = -1, signal_strength = 1.0, seed = 456, noise_form = 'normal'))
+  expect_error(simple_tree_data(A = 100, K = 3, p = 10, noise_std = 1.0, split = 1.676, signal_strength = 1.0, noise_form = 'normal'))
+  expect_error(simple_tree_data(A = 100, K = 5, p = 1, noise_std = 1.0, split = 1.676, signal_strength = 1.0, noise_form = 'normal'))
+  expect_error(simple_tree_data(A = 100, K = 5, p = 10, noise_std = 1.0, split = -1, signal_strength = 1.0, noise_form = 'normal'))
 })

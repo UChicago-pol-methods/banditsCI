@@ -4,15 +4,15 @@
 #'
 #' @param K Integer. Number of arms. Must be a positive integer.
 #' @param p Integer. Dimension of the contextual vector, if \code{is_contextual} is set to \code{TRUE}. Otherwise, \code{p} is ignored. Must be a positive integer.
-#' @param floor_start Numeric. Starting value of the floor. Must be a positive number.
-#' @param floor_decay Numeric. Decay rate of the floor. Must be a positive number between 0 and 1.
+#' @param floor_start Numeric. Specifies the initial value for the assignment probability floor. It ensures that at the start of the process, no assignment probability falls below this threshold. Must be a positive number.
+#' @param floor_decay Numeric. Decay rate of the floor. The floor decays with the number of observations in the experiment such that at each point in time, the applied floor is: \code{floor_start/(s^{floor_decay})}, where \code{s} is the starting index for a batched experiment, or the observation index for an online experiment. Must be a number between 0 and 1 (inclusive).
 #' @param num_mc Integer. Number of Monte Carlo simulations used to approximate the expected reward. Must be a positive integer. Default is 100.
 #' @param is_contextual Logical. Indicates whether the problem is contextual or not. Default is \code{TRUE}.
 #'
 #' @return A list containing the parameters of the LinTSModel.
 #'
 #' @examples
-#' model <- LinTSModel(K = 5, p = 3, floor_start = 1, floor_decay = 0.9, num_mc = 100,
+#' model <- LinTSModel(K = 5, p = 3, floor_start = 1/5, floor_decay = 0.9, num_mc = 100,
 #'                     is_contextual = TRUE)
 #'
 #' @export
@@ -31,8 +31,8 @@ LinTSModel <- function(K,
   } else if (!is.null(p)) {
     warning("p is ignored when is_contextual is set to FALSE.")
   }
-  if (!is.numeric(floor_start) || floor_start <= 0 || is.na(floor_start)) stop("floor_start must be a positive number.")
-  if (!is.numeric(floor_decay) || floor_decay <= 0 || floor_decay > 1 || is.na(floor_decay)) stop("floor_decay should be a positive numeric value between 0 and 1.")
+  if (!is.numeric(floor_start) || floor_start <= 0 || is.na(floor_start)) stop("floor_start should be a positive numeric value without NA values.")
+  if (!is.numeric(floor_decay) || floor_decay < 0 || floor_decay > 1 || is.na(floor_decay)) stop("floor_decay should be a numeric value between 0 and 1 (inclusive) without NA values.")
   if (!is.numeric(num_mc) || (num_mc != as.integer(num_mc)) || num_mc <= 0 || is.na(num_mc)) stop("num_mc must be a positive integer.")
 
   model <- list()
@@ -168,7 +168,7 @@ update_thompson <- function(ws,
 #'
 #' @examples
 #' set.seed(123)
-#' model <- LinTSModel(K = 5, p = 3, floor_start = 1, floor_decay = 0.9, num_mc = 100,
+#' model <- LinTSModel(K = 5, p = 3, floor_start = 1/5, floor_decay = 0.9, num_mc = 100,
 #'                     is_contextual = TRUE)
 #' draws <- draw_thompson(model = model, start = 1, end = 10,
 #'                        xs = matrix(rnorm(30), ncol = 3))
@@ -190,7 +190,7 @@ draw_thompson <- function(model,
   if (!is.logical(model$is_contextual) || is.na(model$is_contextual)) stop("model$is_contextual must be a logical value without NA values.")
   if (is.null(model$num_mc) || !is.numeric(model$num_mc) || (model$num_mc != as.integer(model$num_mc)) || model$num_mc <= 0 || is.na(model$num_mc)) stop("model$num_mc must be a positive integer without NA values.")
 
-  floor <- min(model$floor_start / (model$floor_decay * start), 1 / model$K)
+  floor <- min(model$floor_start / (start^model$floor_decay), 1 / model$K)
 
   if (!is.null(xs)) {
     # Draws arms with a LinTS agent for the observed covariates.
@@ -237,8 +237,8 @@ draw_thompson <- function(model,
 #' Runs a LinTS or non-contextual TS bandit experiment, given potential outcomes and covariates.
 #'
 #' @param ys Matrix. Potential outcomes of shape \code{[A, K]}, where \code{A} is the number of observations and \code{K} is the number of arms. Must not contain NA values.
-#' @param floor_start Numeric. Starting value of the floor. Must be a positive number.
-#' @param floor_decay Numeric. Decay rate of the floor. Must be a positive number between 0 and 1.
+#' @param floor_start Numeric. Specifies the initial value for the assignment probability floor. It ensures that at the start of the process, no assignment probability falls below this threshold. Must be a positive number.
+#' @param floor_decay Numeric. Decay rate of the floor. The floor decays with the number of observations in the experiment such that at each point in time, the applied floor is: \code{floor_start/(s^{floor_decay})}, where \code{s} is the starting index for a batched experiment, or the observation index for an online experiment. Must be a number between 0 and 1 (inclusive).
 #' @param batch_sizes Integer vector. Size of each batch. Must be positive integers.
 #' @param xs Optional matrix. Covariates of shape \code{[A, p]}, where \code{p} is the number of features, if the LinTSModel is contextual. Default is \code{NULL}. Must not contain NA values.
 #' @param balanced Optional logical. Indicates whether to balance the batches. Default is \code{NULL}.
@@ -253,7 +253,7 @@ draw_thompson <- function(model,
 #' ys <- matrix(rbinom(A * K, 1, 0.5), nrow = A, ncol = K)
 #' batch_sizes <- c(250, 250, 250, 250)
 #' results <- run_experiment(ys = ys,
-#'                           floor_start = 5,
+#'                           floor_start = 1/K,
 #'                           floor_decay = 0.9,
 #'                           batch_sizes = batch_sizes,
 #'                           xs = xs)
@@ -271,7 +271,7 @@ run_experiment <- function(ys,
   K <- dim(ys)[2] # K: the number of arms
 
   if (!is.numeric(floor_start) || floor_start <= 0 || is.na(floor_start)) stop("floor_start should be a positive numeric value without NA values.")
-  if (!is.numeric(floor_decay) || floor_decay <= 0 || floor_decay > 1 || is.na(floor_decay)) stop("floor_decay should be a positive numeric value between 0 and 1 without NA values.")
+  if (!is.numeric(floor_decay) || floor_decay < 0 || floor_decay > 1 || is.na(floor_decay)) stop("floor_decay should be a numeric value between 0 and 1 (inclusive) without NA values.")
   if (!is.numeric(batch_sizes) || any(batch_sizes <= 0) || any(floor(batch_sizes) != batch_sizes) || any(is.na(batch_sizes))) stop("batch_sizes should be a vector of positive integers without NA values.")
   if (sum(batch_sizes) != A) stop("The total of batch_sizes should equal the number of observations in ys.")
   if (!is.null(xs)) {
@@ -393,7 +393,9 @@ impose_floor <- function(a,
 #' @return A list containing the generated data (\code{xs}, \code{ys}, \code{muxs}, \code{A}, \code{p}, \code{K}) and the true class probabilities (\code{mus}).
 #'
 #' @examples
-#' data <- generate_bandit_data(xs = iris[,1:4], y = iris[,5], noise_std = 0.1,
+#' data <- generate_bandit_data(xs = as.matrix(iris[,1:4]),
+#'                              y = as.numeric(iris[,5]),
+#'                              noise_std = 0.1,
 #'                              signal_strength = 1.0)
 #'
 #' @export
@@ -402,12 +404,13 @@ generate_bandit_data <- function(xs = NULL,
                                  noise_std = 1.0,
                                  signal_strength = 1.0) {
   # Input checks
+  if(!is.null(xs) & (!is.matrix(xs) || !is.numeric(xs)) ) stop("xs should be a numeric matrix.")
   if (!is.numeric(noise_std) || length(noise_std) != 1 || noise_std < 0 || is.na(noise_std)) stop("noise_std should be a single non-negative numeric value without NA values.")
   if (!is.numeric(signal_strength) || length(signal_strength) != 1 || is.na(signal_strength)) stop("signal_strength should be a single numeric value without NA values.")
   if (!is.null(xs) && !is.null(y)) {
     if (nrow(xs) != length(y)) stop("Number of rows in xs must be equal to the length of y.")
     if (any(is.na(xs))) stop("xs should not contain NA values.")
-    if (any(is.na(y))) stop("y should not contain NA values.")
+    if (any(is.na(y)) || !is.numeric(y)) stop("y should be numeric and should not contain NA values.")
   }
 
   # Generate covariates and potential outcomes from a classification dataset.
@@ -444,7 +447,6 @@ generate_bandit_data <- function(xs = NULL,
 #' @param noise_std Numeric. Standard deviation of the noise added to the potential outcomes. Must be a non-negative number.
 #' @param split Numeric. Split point for creating treatment groups based on the covariates.
 #' @param signal_strength Numeric. Strength of the signal in the potential outcomes.
-#' @param seed Optional integer. Seed value for reproducibility. Default is \code{NULL}.
 #' @param noise_form Character. Distribution of the noise added to the potential outcomes. Can be either "normal" or "uniform".
 #'
 #' @return A list containing the generated data (\code{xs}, \code{ys}, \code{muxs}) and the true potential outcome means (\code{mus}).
@@ -460,12 +462,11 @@ generate_bandit_data <- function(xs = NULL,
 #'                                    noise_std = 1.0,
 #'                                    split = 1.676,
 #'                                    signal_strength = 1.0,
-#'                                    seed = 123,
 #'                                    noise_form = 'normal')
 #'
 #' @export
 simple_tree_data <- function(A, K = 5, p = 10, noise_std = 1.0, split = 1.676,
-                             signal_strength = 1.0, seed = NULL, noise_form = 'normal') {
+                             signal_strength = 1.0, noise_form = 'normal') {
   # Generate covariates and potential outcomes of a synthetic dataset.
 
   # Input check
@@ -473,13 +474,12 @@ simple_tree_data <- function(A, K = 5, p = 10, noise_std = 1.0, split = 1.676,
   if (!is.numeric(split)) stop("split should be a numeric value.")
   if (!is.numeric(signal_strength)) stop("signal_strength should be a numeric value.")
   if (!is.character(noise_form) || !noise_form %in% c('normal', 'uniform')) stop("noise_form should be either 'normal' or 'uniform'.")
-  if (is.na(noise_std) || is.na(split) || is.na(signal_strength) || (!is.null(seed) && is.na(seed)) || is.na(noise_form)) stop("Inputs should not contain NA values.")
+  if (is.na(noise_std) || is.na(split) || is.na(signal_strength) || is.na(noise_form)) stop("Inputs should not contain NA values.")
 
   stopifnot(p >= 2) # to check the input parameters satisfy certain conditions
   stopifnot(K >= 4)
   stopifnot(split >= 0)
 
-  set.seed(seed)
   # Generate experimental data
   xs <- matrix(stats::rnorm(A * p), ncol = p)
 
@@ -573,7 +573,7 @@ calculate_balwts <- function(ws, probs) {
 #' ys <- matrix(rbinom(A * K, 1, 0.5), nrow = A, ncol = K)
 #' batch_sizes <- c(250, 250, 250, 250)
 #' results <- run_experiment(ys = ys,
-#'                           floor_start = 5,
+#'                           floor_start = 1/K,
 #'                           floor_decay = 0.9,
 #'                           batch_sizes = batch_sizes,
 #'                           xs = xs)

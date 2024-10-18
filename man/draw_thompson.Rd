@@ -23,7 +23,7 @@ Draws arms from a LinTS or non-contextual TS agent for multi-armed bandit proble
 }
 \examples{
 set.seed(123)
-model <- LinTSModel(K = 5, p = 3, floor_start = 1, floor_decay = 0.9, num_mc = 100,
+model <- LinTSModel(K = 5, p = 3, floor_start = 1/5, floor_decay = 0.9, num_mc = 100,
                     is_contextual = TRUE)
 draws <- draw_thompson(model = model, start = 1, end = 10,
                        xs = matrix(rnorm(30), ncol = 3))

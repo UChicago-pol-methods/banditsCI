@@ -11,7 +11,6 @@ simple_tree_data(
   noise_std = 1,
   split = 1.676,
   signal_strength = 1,
-  seed = NULL,
   noise_form = "normal"
 )
 }
@@ -27,8 +26,6 @@ simple_tree_data(
 \item{split}{Numeric. Split point for creating treatment groups based on the covariates.}
 
 \item{signal_strength}{Numeric. Strength of the signal in the potential outcomes.}
-
-\item{seed}{Optional integer. Seed value for reproducibility. Default is \code{NULL}.}
 
 \item{noise_form}{Character. Distribution of the noise added to the potential outcomes. Can be either "normal" or "uniform".}
 }
@@ -49,7 +46,6 @@ synthetic_data <- simple_tree_data(A = A,
                                    noise_std = 1.0,
                                    split = 1.676,
                                    signal_strength = 1.0,
-                                   seed = 123,
                                    noise_form = 'normal')
 
 }

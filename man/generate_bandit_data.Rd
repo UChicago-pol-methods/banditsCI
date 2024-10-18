@@ -22,7 +22,9 @@ A list containing the generated data (\code{xs}, \code{ys}, \code{muxs}, \code{A
 Generates covariates and potential outcomes for a classification dataset.
 }
 \examples{
-data <- generate_bandit_data(xs = iris[,1:4], y = iris[,5], noise_std = 0.1,
+data <- generate_bandit_data(xs = as.matrix(iris[,1:4]),
+                             y = as.numeric(iris[,5]),
+                             noise_std = 0.1,
                              signal_strength = 1.0)
 
 }

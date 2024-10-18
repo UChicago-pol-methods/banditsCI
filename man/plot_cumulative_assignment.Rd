@@ -25,7 +25,7 @@ xs <- matrix(runif(A * K), nrow = A, ncol = K)
 ys <- matrix(rbinom(A * K, 1, 0.5), nrow = A, ncol = K)
 batch_sizes <- c(250, 250, 250, 250)
 results <- run_experiment(ys = ys,
-                          floor_start = 5,
+                          floor_start = 1/K,
                           floor_decay = 0.9,
                           batch_sizes = batch_sizes,
                           xs = xs)
