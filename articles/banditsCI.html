@@ -262,7 +262,7 @@ line.</p>
 <p>Then, we estimate average treatment effects of each arm compared to
 the control arm, arm 1, using two different methods.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Get estimates for treatment effects of policies as contrast to control </span></span>
+<code class="sourceCode R"><span><span class="co"># Get estimates for treatment effects of policies in contrast to control </span></span>
 <span><span class="co"># \delta(w_1, w_2) = E[Y_t(w_1) - Y_t(w_2)]. </span></span>
 <span><span class="co"># In Hadad et al. (2021) there are two approaches.</span></span>
 <span><span class="co">## The first approach: use the difference in AIPW scores as the unbiased scoring </span></span>
@@ -288,9 +288,11 @@ the control arm, arm 1, using two different methods.</p>
 <span>  gammahat <span class="op">=</span> <span class="va">aipw_scores</span>, </span>
 <span>  probs_array <span class="op">=</span> <span class="va">results</span><span class="op">$</span><span class="va">probs</span>,</span>
 <span>  floor_decay <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
-<p>Under the first approach, we calculate AIPW scores under both
+<ol style="list-style-type: decimal">
+<li>Under the first approach, we calculate AIPW scores under both
 treatment(s) and control, take the difference in AIPW scores, and then
-conduct adaptive weighting.</p>
+conduct adaptive weighting.</li>
+</ol>
 <p>Note: We do not used this combined estimation method with the
 non-contextual two-point estimation approach, which produces unstable
 estimates, and is not supported in the original source. We can do
@@ -332,8 +334,10 @@ procedures in contextual adaptive settings.</p>
 <p><img src="banditsCI_files/figure-html/contextual_ATEs_plot1-1.png" width="45%"><img src="banditsCI_files/figure-html/contextual_ATEs_plot1-2.png" width="45%"><img src="banditsCI_files/figure-html/contextual_ATEs_plot1-3.png" width="45%"></p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="va">op</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>In the second approach, we implement adaptive weighting on treatment
-and control scores separately, and then take the difference.</p>
+<ol start="2" style="list-style-type: decimal">
+<li>In the second approach, we implement adaptive weighting on treatment
+and control scores separately, and then take the difference.</li>
+</ol>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>,<span class="fl">11</span>,<span class="fl">4</span>,<span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="fl">0.1</span><span class="op">)</span></span>
 <span></span>
@@ -383,7 +387,7 @@ data. The algorithm used is Thompson sampling, without contexts.</p>
 <span>                          floor_decay <span class="op">=</span> <span class="fl">0</span>, </span>
 <span>                          batch_sizes <span class="op">=</span> <span class="va">batch_sizes</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># plot the cumulative assignment graph for every arm and every batch size, </span></span>
+<span><span class="co"># plot the cumulative assignment graph</span></span>
 <span><span class="co"># x-axis is the number of observations, y-axis is the cumulative assignment</span></span>
 <span><span class="fu"><a href="../reference/plot_cumulative_assignment.html">plot_cumulative_assignment</a></span><span class="op">(</span><span class="va">results</span>, <span class="va">batch_sizes</span><span class="op">)</span></span></code></pre></div>
 <p><img src="banditsCI_files/figure-html/non-contextual_experiment-1.png" width="100%"></p>
@@ -470,7 +474,7 @@ line.</p>
 <p>We again estimate average treatment effects of each arm compared to
 the control arm, arm 1, using the two different methods.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Get estimates for treatment effects of policies as contrast to control </span></span>
+<code class="sourceCode R"><span><span class="co"># Get estimates for treatment effects of policies in contrast to control </span></span>
 <span><span class="co"># \delta(w_1, w_2) = E[Y_t(w_1) - Y_t(w_2)]. </span></span>
 <span><span class="co"># In Hadad et al. (2021) there are two approaches.</span></span>
 <span><span class="co">## The first approach: use the difference in AIPW scores as the unbiased scoring </span></span>
@@ -495,8 +499,10 @@ the control arm, arm 1, using the two different methods.</p>
 <span>  gammahat <span class="op">=</span> <span class="va">aipw_scores</span>, </span>
 <span>  probs_array <span class="op">=</span> <span class="va">results</span><span class="op">$</span><span class="va">probs</span>,</span>
 <span>  floor_decay <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></code></pre></div>
-<p>First take the difference in AIPW scores, and then conduct adaptive
-weighting.</p>
+<ol style="list-style-type: decimal">
+<li>First take the difference in AIPW scores, and then conduct adaptive
+weighting.</li>
+</ol>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>,<span class="fl">11</span>,<span class="fl">4</span>,<span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="fl">0.1</span><span class="op">)</span></span>
 <span></span>
@@ -532,8 +538,10 @@ weighting.</p>
 <p><img src="banditsCI_files/figure-html/noncontextual_ATEs_plot1-1.png" width="45%"><img src="banditsCI_files/figure-html/noncontextual_ATEs_plot1-2.png" width="45%"><img src="banditsCI_files/figure-html/noncontextual_ATEs_plot1-3.png" width="45%"></p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="va">op</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>Or implement adaptive weighting on treatment and control scores
-separately, and then take the difference.</p>
+<ol start="2" style="list-style-type: decimal">
+<li>Or implement adaptive weighting on treatment and control scores
+separately, and then take the difference.</li>
+</ol>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>,<span class="fl">11</span>,<span class="fl">4</span>,<span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="fl">0.1</span><span class="op">)</span></span>
 <span></span>
