@@ -25,9 +25,16 @@ Computes AIPW/doubly robust scores based on observed rewards, pulled arms, and i
 probability scores. If \code{mu_hat} is provided, compute AIPW scores, otherwise compute IPW scores.
 }
 \examples{
-aw_scores(yobs = c(0.5, 1, 0, 1.5), ws = c(1, 2, 2, 3),
-          balwts = matrix(c(0.5, 2, 1, 0.5, 1, 1.5, 0.5, 1.5, 2, 1.5, 0.5, 1), ncol = 3),
+aw_scores(yobs = c(0.5, 1, 0, 1.5),
+          ws = c(1, 2, 2, 3),
+          balwts = matrix(c(0.5, 2, 1, 0.5,
+                            1, 1.5, 0.5, 1.5,
+                            2, 1.5, 0.5, 1),
+                            ncol = 3),
           K = 3,
-          mu_hat = matrix(c(0.5, 0.8, 0.6, 0.3, 0.9, 0.2, 0.5, 0.7, 0.4, 0.8, 0.2, 0.6), ncol = 3))
+          mu_hat = matrix(c(0.5, 0.8, 0.6, 0.3,
+                            0.9, 0.2, 0.5, 0.7,
+                            0.4, 0.8, 0.2, 0.6),
+                            ncol = 3))
 
 }

@@ -224,7 +224,7 @@ suppressWarnings(par(op))
 Then, we estimate average treatment effects of each arm compared to the control 
 arm, arm 1, using two different methods. 
 ```{r contextual_ATEs_estimation}
-# Get estimates for treatment effects of policies as contrast to control 
+# Get estimates for treatment effects of policies in contrast to control 
 # \delta(w_1, w_2) = E[Y_t(w_1) - Y_t(w_2)]. 
 # In Hadad et al. (2021) there are two approaches.
 ## The first approach: use the difference in AIPW scores as the unbiased scoring 
@@ -252,7 +252,7 @@ out_full_te2 <- output_estimates(
   floor_decay = 0)
 ```
 
-Under the first approach, we calculate AIPW scores under both treatment(s) and 
+1. Under the first approach, we calculate AIPW scores under both treatment(s) and 
 control, take the difference in AIPW scores, and then conduct adaptive 
 weighting. 
 
@@ -296,7 +296,7 @@ for(i in 1:length(out_full_te1)){
 suppressWarnings(par(op))
 ```
 
-In the second approach, we implement adaptive weighting on treatment and control
+2. In the second approach, we implement adaptive weighting on treatment and control
 scores separately, and then take the difference. 
 ```{r contextual_ATEs_plot2, fig.width=7, fig.height=5, out.width = "45%"}
 par(mar = c(5,11,4,2) + 0.1)
@@ -345,7 +345,7 @@ results <- run_experiment(ys = ys,
                           floor_decay = 0, 
                           batch_sizes = batch_sizes)
 
-# plot the cumulative assignment graph for every arm and every batch size, 
+# plot the cumulative assignment graph
 # x-axis is the number of observations, y-axis is the cumulative assignment
 plot_cumulative_assignment(results, batch_sizes)
 ```
@@ -433,7 +433,7 @@ suppressWarnings(par(op))
 We again estimate average treatment effects of each arm compared to the control 
 arm, arm 1, using the two different methods. 
 ```{r noncontextual_ATEs_estimation}
-# Get estimates for treatment effects of policies as contrast to control 
+# Get estimates for treatment effects of policies in contrast to control 
 # \delta(w_1, w_2) = E[Y_t(w_1) - Y_t(w_2)]. 
 # In Hadad et al. (2021) there are two approaches.
 ## The first approach: use the difference in AIPW scores as the unbiased scoring 
@@ -460,7 +460,7 @@ out_full_te2 <- output_estimates(
   floor_decay = 0)
 ```
 
-First take the difference in AIPW scores, and then conduct adaptive 
+1. First take the difference in AIPW scores, and then conduct adaptive 
 weighting.
 ```{r noncontextual_ATEs_plot1, fig.width=7, fig.height=5, out.width = "45%"}
 par(mar = c(5,11,4,2) + 0.1)
@@ -497,7 +497,7 @@ for(i in 1:length(out_full_te1)){
 suppressWarnings(par(op))
 ```
 
-Or implement adaptive weighting on treatment and control
+2. Or implement adaptive weighting on treatment and control
 scores separately, and then take the difference. 
 ```{r noncontextual_ATEs_plot2, fig.width=7, fig.height=5, out.width = "45%"}
 par(mar = c(5,11,4,2) + 0.1)

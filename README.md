@@ -66,7 +66,7 @@ out_full
 
 ```
 
-For a more detailed description of how to use the package functions, see the [vignette](https://github.com/UChicago-pol-methods/banditsCI/tree/main/vignettes). 
+For a more detailed description of how to use the package functions, see the [vignette](https://uchicago-pol-methods.github.io/banditsCI/articles/banditsCI.html). 
 
 
 ### Estimation

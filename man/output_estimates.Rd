@@ -103,7 +103,7 @@ plot_results <- function(result) {
   labels <- rownames(result)
 
   # Define the limits for the x-axis based on estimates and std.errors
-  xlims <- c(min(estimates - std.errors), max(estimates + std.errors))
+  xlims <- c(min(estimates - 2*std.errors), max(estimates + 2*std.errors))
 
   # Create the basic error bar plot using base R
   invisible(
@@ -119,17 +119,12 @@ plot_results <- function(result) {
   )
 
   # Add the x-axis values
-  x_ticks <- seq(from = xlims[1], to = xlims[2], by = 0.1)
+  x_ticks <- x_ticks <- seq(from = round(xlims[1], .5),
+                            to = round(xlims[2], .5), by = 0.5)
   invisible(
     axis(1,
-         at = x_ticks[
-           (x_ticks > max(estimates + std.errors) |
-              x_ticks < min(estimates - std.errors))
-         ],
-         labels = x_ticks[
-           (x_ticks > max(estimates + std.errors) |
-              x_ticks < min(estimates - std.errors))
-         ])
+         at = x_ticks,
+         labels = x_ticks)
   )
 
   # Add error bars
