@@ -54,6 +54,15 @@ data from a pilot (this code is not evaluated here).
 # data <- generate_bandit_data(xs = xs, y = y, noise_std = 0.5)
 ```
 
+Components of data[[1]]:
+
+- `ys`: outcomes vector of shape [A];
+
+- `xs`: covariates of shape [A, p]. The value in xs [i, j] represents the j-th 
+  covariate of the i-th observation;
+
+- `muxs`: true best arm for each context of shape [A, K]. The value in muxs [i, j] represents the predicted outcome or expected reward if the i-th observation is assigned to the j-th treatment arm.
+
 ## For the contextual case. 
 We run a contextual bandit experiment using our `run_experiment()` function. 
 The algorithm used here is a version of linear Thompson sampling. 
@@ -187,7 +196,7 @@ True mean values are represented by the dashed red line.
 ```{r contextual_means_plot, fig.width=7, fig.height=5, out.width = "45%"}
 op <- par()
 
-par(mar = c(5,11,4,2) + 0.1)
+par(mar = c(5,16,4,2) + 0.1)
 
 # set some plotting parameters across plots
 xmin <- min(unlist(lapply(out_full, `[`, TRUE, "estimate")), na.rm = TRUE) - 
@@ -262,7 +271,7 @@ supported in the original source. We can do non-contextual two-point estimation
 when calculating separate adaptive weights for contrasts, however we recommend 
 using other estimation procedures in contextual adaptive settings. 
 ```{r contextual_ATEs_plot1, fig.width=7, fig.height=5, out.width = "45%"}
-par(mar = c(5,11,4,2) + 0.1)
+par(mar = c(5,16,4,2) + 0.1)
 
 # set some plotting parameters across plots
 xmin <- min(unlist(lapply(out_full_te1, `[`, TRUE, "estimate")), na.rm = TRUE) - 
@@ -299,7 +308,7 @@ suppressWarnings(par(op))
 2. In the second approach, we implement adaptive weighting on treatment and control
 scores separately, and then take the difference. 
 ```{r contextual_ATEs_plot2, fig.width=7, fig.height=5, out.width = "45%"}
-par(mar = c(5,11,4,2) + 0.1)
+par(mar = c(5,16,4,2) + 0.1)
 
 # set some plotting parameters across plots
 xmin <- min(unlist(lapply(out_full_te2, `[`, TRUE, "estimate")), na.rm = TRUE) - 
@@ -463,7 +472,7 @@ out_full_te2 <- output_estimates(
 1. First take the difference in AIPW scores, and then conduct adaptive 
 weighting.
 ```{r noncontextual_ATEs_plot1, fig.width=7, fig.height=5, out.width = "45%"}
-par(mar = c(5,11,4,2) + 0.1)
+par(mar = c(5,16,4,2) + 0.1)
 
 # set some plotting parameters across plots
 xmin <- min(unlist(lapply(out_full_te1, `[`, TRUE, "estimate")), na.rm = TRUE) - 
@@ -500,7 +509,7 @@ suppressWarnings(par(op))
 2. Or implement adaptive weighting on treatment and control
 scores separately, and then take the difference. 
 ```{r noncontextual_ATEs_plot2, fig.width=7, fig.height=5, out.width = "45%"}
-par(mar = c(5,11,4,2) + 0.1)
+par(mar = c(5,16,4,2) + 0.1)
 
 # set some plotting parameters across plots
 xmin <- min(unlist(lapply(out_full_te2, `[`, TRUE, "estimate")), na.rm = TRUE) - 
