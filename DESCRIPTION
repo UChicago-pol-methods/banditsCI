@@ -4,9 +4,9 @@ Version: 1.0.0
 Authors@R: c(
     person("Molly", "Offer-Westort", email = "mollyow@gmail.com", role = c("aut", "cre", "cph"), comment = c(ORCID = "0000-0003-2787-9919")),
     person("Yinghui", "Zhou", email = "yz4690@columbia.edu", role = c("aut"), comment = c(ORCID = "0009-0002-3515-9751")),
-    person("Zhan", "Ruohan", email = "rhzhan@ust.hk", role = c("aut"), comment = c(ORCID = "0000-0002-3426-2784")))
-Description: Provides functions for conducting frequentist inference on adaptively generated data. The methods implemented are based on Zhan et al. (2021) <doi:10.48550/arXiv:2106.02029> and Hadad et al. (2021) <doi:10.48550/arXiv:1911.02768>. For illustration, several functions for simulating non-contextual and contextual adaptive experiments using Thompson sampling are also supplied. 
-License: GPL (>= 3) + file LICENSE
+    person("Ruohan", "Zhan", email = "rhzhan@ust.hk", role = c("aut"), comment = c(ORCID = "0000-0002-3426-2784")))
+Description: Frequentist inference on adaptively generated data. The methods implemented are based on Zhan et al. (2021) <doi:10.48550/arXiv.2106.02029> and Hadad et al. (2021) <doi:10.48550/arXiv.1911.02768>. For illustration, several functions for simulating non-contextual and contextual adaptive experiments using Thompson sampling are also supplied. 
+License: GPL (>= 3)
 Encoding: UTF-8
 RoxygenNote: 7.2.3
 URL: https://github.com/UChicago-pol-methods/banditsCI, https://uchicago-pol-methods.github.io/banditsCI/

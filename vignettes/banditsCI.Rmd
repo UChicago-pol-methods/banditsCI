@@ -194,7 +194,7 @@ We first look at estimates of mean response under each of the treatment arms.
 True mean values are represented by the dashed red line. 
 
 ```{r contextual_means_plot, fig.width=7, fig.height=5, out.width = "45%"}
-op <- par()
+op <- par(no.readonly = TRUE)
 
 par(mar = c(5,16,4,2) + 0.1)
 
@@ -403,8 +403,6 @@ out_full <- output_estimates(
 We first look at estimates of mean response under each of the treatment arms.
 True mean values are represented by the dashed red line. 
 ```{r noncontextual_means_plot, fig.width=7, fig.height=5, out.width = "45%"}
-op <- par()
-
 par(mar = c(5,16,4,2) + 0.1)
 
 # set some plotting parameters across plots
