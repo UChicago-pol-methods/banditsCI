@@ -344,8 +344,10 @@ calculate_continuous_X_statistics <- function(h, gammahat, policy) {
 #' }
 #'
 #' sample_result <- estimates[[1]]
+#' op <- par(no.readonly = TRUE)
 #' par(mar=c(5, 12, 4, 2))
 #' plot_results(sample_result)
+#' par(op)
 #'
 #' @export
 output_estimates <- function(policy0 = NULL,
