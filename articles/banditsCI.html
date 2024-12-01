@@ -54,7 +54,7 @@
       <h1>Confidence interval vignette.</h1>
             
       
-      <small class="dont-index">Source: <a href="https://github.com/UChicago-pol-methods/banditsCI/blob/v1.0.0/vignettes/banditsCI.Rmd" class="external-link"><code>vignettes/banditsCI.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/UChicago-pol-methods/banditsCI/blob/main/vignettes/banditsCI.Rmd" class="external-link"><code>vignettes/banditsCI.Rmd</code></a></small>
       <div class="d-none name"><code>banditsCI.Rmd</code></div>
     </div>
 
@@ -233,7 +233,7 @@ function. Other conditional means models can also be used.</p>
 treatment arms. True mean values are represented by the dashed red
 line.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">op</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">op</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>no.readonly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>,<span class="fl">16</span>,<span class="fl">4</span>,<span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="fl">0.1</span><span class="op">)</span></span>
 <span></span>
@@ -382,7 +382,7 @@ and control scores separately, and then take the difference.</li>
 <span><span class="op">}</span></span></code></pre></div>
 <p><img src="banditsCI_files/figure-html/contextual_ATEs_plot2-1.png" width="45%"><img src="banditsCI_files/figure-html/contextual_ATEs_plot2-2.png" width="45%"><img src="banditsCI_files/figure-html/contextual_ATEs_plot2-3.png" width="45%"></p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="va">op</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="va">op</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level2">
@@ -445,9 +445,7 @@ data. The algorithm used is Thompson sampling, without contexts.</p>
 treatment arms. True mean values are represented by the dashed red
 line.</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">op</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>,<span class="fl">16</span>,<span class="fl">4</span>,<span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="fl">0.1</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span>mar <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>,<span class="fl">16</span>,<span class="fl">4</span>,<span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="fl">0.1</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># set some plotting parameters across plots</span></span>
 <span><span class="va">xmin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">out_full</span>, <span class="va">`[`</span>, <span class="cn">TRUE</span>, <span class="st">"estimate"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">-</span> </span>
@@ -480,7 +478,7 @@ line.</p>
 <span><span class="op">}</span></span></code></pre></div>
 <p><img src="banditsCI_files/figure-html/noncontextual_means_plot-1.png" width="45%"><img src="banditsCI_files/figure-html/noncontextual_means_plot-2.png" width="45%"><img src="banditsCI_files/figure-html/noncontextual_means_plot-3.png" width="45%"><img src="banditsCI_files/figure-html/noncontextual_means_plot-4.png" width="45%"></p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="va">op</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/par.html" class="external-link">par</a></span><span class="op">(</span><span class="va">op</span><span class="op">)</span></span></code></pre></div>
 <p>We again estimate average treatment effects of each arm compared to
 the control arm, arm 1, using the two different methods.</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
@@ -596,7 +594,7 @@ separately, and then take the difference.</li>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Molly Offer-Westort, Yinghui Zhou, Zhan Ruohan.</p>
+  <p>Developed by Molly Offer-Westort, Yinghui Zhou, Ruohan Zhan.</p>
 </div>
 
 <div class="pkgdown-footer-right">
