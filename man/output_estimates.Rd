@@ -137,8 +137,10 @@ plot_results <- function(result) {
 }
 
 sample_result <- estimates[[1]]
+op <- par(no.readonly = TRUE)
 par(mar=c(5, 12, 4, 2))
 plot_results(sample_result)
+par(op)
 
 }
 \references{

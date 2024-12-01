@@ -339,7 +339,7 @@ for(i in 1:length(out_full_te2)){
   abline(v = data$mus[i+1] - data$mus[1], col = "#FF3300", lty = "dashed")
   
 }
-suppressWarnings(par(op))
+par(op)
 ```
 
 
@@ -434,7 +434,7 @@ for(i in 1:length(out_full)){
   abline(v = data$mus[i], col = "#FF3300", lty = "dashed")
   
 }
-suppressWarnings(par(op))
+par(op)
 ```
 
 We again estimate average treatment effects of each arm compared to the control 
